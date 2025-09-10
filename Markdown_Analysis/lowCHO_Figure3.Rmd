@@ -1,0 +1,1031 @@
+---
+title: "Figure3_Draft5_pathway"
+author: "Jacob T. Nearing Ph.D."
+date: "2025-09-01"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir = getwd())
+
+#source helper functions
+source("Utility_Scripts/helper_functions.R")
+source("Utility_Scripts/load_data_functions.R")
+
+library(maaslin3)
+library(ggplot2)
+library(patchwork)
+library(KEGGREST)
+library(ggpubr)
+library(ComplexHeatmap)
+library(pals)
+library(ggvenn)
+library(scales)
+library(Polychrome)
+```
+
+# Set up "Global Variables"
+```{r}
+col_diets = c("High Carb" = "red3", "High Fat" = "darkslateblue", "High Protein" = "steelblue")
+default_anno_cols <- list(
+  diet=col_diets,
+  Diet=col_diets,
+  `Diet Order Names`=c(`High Protein --> High Fat`="purple",
+                       `High Fat --> High Protein`="orange"))
+```
+
+Load in data
+```{r}
+bug <- load_taxa_data()
+bug_common <- bug[,is_common(t(bug))]
+  
+metadata <- load_meta_data(m4_data = bug)
+metadata$Diet <- metadata$`Diet Name`
+metadata$Age <- metadata$`age (yr)`
+metadata$DogID <- metadata$`Animal Name`
+metadata$dietOrder <- metadata$`Diet Order Names`
+rownames(metadata) <- metadata$`Metagenomics Sample Number`
+
+
+pathways <- load_pathway_data(metadata=metadata, remove_unknown = T)
+ECs <- load_EC_data(metadata=metadata, remove_ungroup = T)
+fecal_mbx <- load_fecalMbx_data(metadata)
+
+ECs_start <- load_EC_data(metadata=metadata, strat = T, remove_ungroup = F)
+pathway_strat <- load_pathway_data(metadata=metadata, strat=T, remove_unknown = F)
+```
+
+Fix pathway names so they match maaslin3 output
+```{r}
+pathways$`Metagenomics Sample Number` <- rownames(pathways)
+pathway_rename <- pathways
+colnames(pathway_rename) <- gsub("[[:punct:]]", ".", colnames(pathway_rename))
+colnames(pathway_rename) <- gsub("\ ", ".", colnames(pathway_rename))
+colnames(pathway_rename) <- tolower(colnames(pathway_rename))
+colnames(pathway_rename)[497] <- "Metagenomics Sample Number"
+metadata_pathway <- metadata %>% left_join(pathway_rename)
+```
+
+Fix samples names
+```{r}
+fecal_mbx$`Metagenomics Sample Number` <- rownames(fecal_mbx)
+fecal_mbx_rename <- fecal_mbx
+
+metadata_fecal_mbx <- metadata %>% left_join(fecal_mbx_rename)
+```
+
+```{r}
+bug_rename <- bug
+bug_rename$`Metagenomics Sample Number` <- rownames(bug)
+
+metadata_bug <- metadata %>% left_join(bug_rename)
+```
+
+# MaAsLin3 runs
+
+## ECs
+
+We first filter out any features that are completely explained by one taxon
+```{r}
+#make sure the samples line up
+identical(rownames(ECs), rownames(bug))
+#calculate the pearson correlations
+EC_bug_corrs <- cor(ECs, bug_common)
+
+#melt it into long form
+EC_bug_corrs_melt <- reshape2::melt(EC_bug_corrs)
+
+EC_cor_filt <- EC_bug_corrs_melt %>% filter(abs(value) > 0.9) %>% select(Var1) %>% unique()
+
+### filters out 562 ECs
+EC_bug_corrs_melt %>% select(Var1) %>% unique() %>% dim()
+
+##leaves 2250 features
+ECs_filt_cor_common_bug <- ECs %>% select(-all_of(as.character(EC_cor_filt$Var1)))
+dim(ECs_filt_cor_common_bug)
+
+##run MaAsLin3
+# diet_ecs_filt <- maaslin3::maaslin3(input_data = ECs_filt_cor_common_bug,
+#                                input_metadata = metadata,
+#                                formula = ~ Age + Gender + Diet + (1|DogID),
+#                                output="Functional_MaAsLin3/Diet/ECS_filt",
+#                                reference = c("Diet,High Carb"), save_models = T)
+# 
+# saveRDS(diet_ecs_filt, "Functional_MaAsLin3/Diet/ECS_filt/all_data.RDS")
+```
+
+## Pathways
+
+Same as ECs (above) but for Pathways
+
+```{r}
+identical(rownames(pathways), rownames(bug))
+
+#remove metagenome names
+pathway_bug_corrs <- cor(pathways[-497], bug_common)
+
+#melt it into long form
+pathway_bug_corrs_melt <- reshape2::melt(pathway_bug_corrs)
+
+pathway_cor_filt <- pathway_bug_corrs_melt %>% filter(abs(value) > 0.9)
+length(unique(pathway_cor_filt$Var1))
+
+## removes 92 pathways
+
+## run MaAsLin3
+pathways_filt_cor_common_bug <- pathways %>% select(-all_of(as.character(pathway_cor_filt$Var1))) %>% 
+  select(-"Metagenomics Sample Number")
+
+
+## Run Maaslin3
+# diet_pathways_filt <- maaslin3::maaslin3(input_data = pathways_filt_cor_common_bug,
+#                                input_metadata = metadata,
+#                                formula = ~ Age + Gender + Diet + (1|DogID),
+#                                output="Functional_MaAsLin3/Diet/pathways_filt",
+#                                reference = c("Diet,High Carb"), save_models = T)
+# 
+# saveRDS(diet_pathways_filt, "Functional_MaAsLin3/Diet/pathways_filt/all_data.RDS")
+```
+
+
+# Read in the model results from Maaslin3
+
+## Pathways
+```{r}
+pathway_results <- read.table("Functional_MaAsLin3/pathways_filt/all_results.tsv",
+                              sep="\t", header=T)
+
+pathway_result_rds <- readRDS("Functional_MaAsLin3/pathways_filt/all_data.RDS")
+```
+
+# Coefficent plot from Maaslin3
+
+## top 30 balanced
+
+This is what we will use for the paper
+top 15 from each side
+```{r}
+pathway_plot_bal <- maaslin3::maaslin_plot_results("Display_Items/From_Figure3_script/",
+                                              transformed_data = pathway_result_rds$transformed_data,
+                                              unstandardized_metadata = pathway_result_rds$metadata,
+                                              fit_data_abundance = pathway_result_rds$fit_data_abundance,
+                                              fit_data_prevalence = pathway_result_rds$fit_data_prevalence,
+                                              normalization = "TSS",
+                                              transform = "LOG",
+                                              coef_plot_vars = c("Diet High Protein", "Diet High Fat"),
+                                              balanced=T, summary_plot_first_n = 30, plot_associations = F)
+
+pathways_of_interest <- unique(pathway_plot_bal$Summary_plot$coefficient$data$feature)
+
+pathway_plot_bal$Summary_plot$coefficient + theme_bw(base_size = 12) + scale_x_continuous(limits = c(-2.2, 3.5))
+
+ggsave(filename="Display_Items/From_Figure3_script/pathway_coef_plot.pdf", height=6, width=12)
+```
+
+# Pathway volcano plot and overlap plots
+```{r}
+pathway_results$model[which(pathway_results$model=="abundance")] <- "Abundance"
+pathway_results$model[which(pathway_results$model=="prevalence")] <- "Prevalence"
+
+library(ggrepel)
+volcano <- pathway_results %>% filter(is.na(error)) %>%
+  filter(metadata=="Diet") %>%
+  ggplot(aes(x=coef, y=-log10(pval_individual), alpha=qval_individual < 0.1, fill=value)) + geom_point(shape=21, size=3) +
+  facet_grid(cols=vars(model), scales="free") +
+  scale_fill_manual(values=col_diets, name="Food") +
+  theme_bw() +
+  guides(alpha="none") +
+  geom_text_repel(data=subset(pathway_results %>% filter(is.na(error)) %>% filter(model=="Abundance"), pval_individual < 0.0000000000001), aes(label=feature, x=coef, y=-log10(pval_individual))) +
+  geom_text_repel(data=subset(pathway_results %>% filter(is.na(error)) %>% filter(model=="Prevalence"), pval_individual < 0.0000001), aes(label=feature, x=coef, y=-log10(pval_individual)))
+
+volcano
+
+
+###make ven diagram
+fat_abund <- pathway_results %>% filter(is.na(error)) %>% 
+  filter(value=="High Fat") %>%
+  filter(qval_individual < 0.1) %>%
+  filter(model=="Abundance") %>% 
+  pull(feature)
+
+fat_abund
+
+fat_prev <- pathway_results %>% filter(is.na(error)) %>%
+  filter(value=="High Fat") %>%
+  filter(qval_individual < 0.1) %>%
+  filter(model=="Prevalence") %>%
+  pull(feature)
+
+length(fat_prev)
+
+
+prot_abund <- pathway_results %>% filter(is.na(error)) %>%
+  filter(value=="High Protein") %>%
+  filter(qval_individual < 0.1) %>%
+  filter(model=="Abundance") %>%
+  pull(feature)
+prot_abund
+
+prot_prev <- pathway_results %>% filter(is.na(error)) %>%
+  filter(value=="High Protein") %>%
+  filter(qval_individual < 0.1) %>%
+  filter(model=="Prevalence") %>%
+  pull(feature)
+prot_prev
+
+#keep those that error out in this calculation
+abundance_nonsig <- pathway_results %>% 
+ # filter(is.na(error)) %>%
+  filter(metadata=="Diet") %>%
+  filter(model=="Abundance") %>%
+  filter(!feature %in% fat_abund) %>%
+  filter(!feature %in% prot_abund) %>%
+  pull(feature) %>%
+  unique()
+
+prev_nonsig <- pathway_results %>%
+  filter(metadata=="Diet") %>%
+  filter(model=="Prevalence") %>%
+  filter(!feature %in% fat_prev) %>%
+  filter(!feature %in% prot_prev) %>%
+  pull(feature) %>%
+  unique()
+  
+
+length(intersect(fat_abund, fat_prev))
+
+length(fat_abund)
+length(fat_prev)
+117-4
+
+length(intersect(prot_abund, prot_prev))
+
+length(prot_abund)
+157-21
+length(prot_prev)
+#Abundance overlap
+Abundance_sigs <- list("High Fat"=fat_abund, "High Protein"=prot_abund, "Non-Significant"=abundance_nonsig)
+Prevalence_sigs <- list("High Fat"=fat_prev, "High Protein"=prot_prev)
+
+abund_venn <- ggvenn(Abundance_sigs, c("High Fat", "High Protein"), set_name_size = 4, fill_color=c("darkslateblue", "steelblue"), show_percentage = F) +
+  annotate("text", x = 0, y = -1.1, label = "Non-Significant\n194", size = 4)
+abund_venn
+
+prev_venn <- ggvenn(Prevalence_sigs, set_name_size = 4, fill_color=c("darkslateblue", "steelblue"),
+                    show_percentage = F) +
+  annotate("text", x=0, y=-1.1, label="Non-Significant\n305")
+prev_venn
+
+sup_plot_paths <- volcano/(abund_venn + prev_venn)
+sup_plot_paths
+
+ggsave("Display_Items/From_Figure3_script/Supplemental_volcano_ven.pdf",
+       width=12, height=8)
+ggsave("Display_Items/From_Figure3_script/Supplemental_volcano_ven.png",
+       width=12, height=8)
+```
+
+## Volcanos for ECs
+
+```{r}
+EC_results <- read.table("Functional_MaAsLin3/ECS_filt/all_results.tsv",
+                              sep="\t", header=T)
+
+
+EC_results$model[which(EC_results$model=="abundance")] <- "Abundance"
+EC_results$model[which(EC_results$model=="prevalence")] <- "Prevalence"
+
+library(ggrepel)
+volcano_EC <- EC_results %>% filter(is.na(error)) %>%
+  filter(metadata=="Diet") %>%
+  ggplot(aes(x=coef, y=-log10(pval_individual), alpha=qval_individual < 0.1, fill=value)) + geom_point(shape=21, size=3) +
+  facet_grid(cols=vars(model), scales="free") +
+  scale_fill_manual(values=col_diets, name="Food") +
+  theme_bw() +
+  guides(alpha="none") +
+  geom_text_repel(data=subset(EC_results %>% filter(is.na(error)) %>% filter(model=="Abundance"), pval_individual < 0.00000000000000001), aes(label=feature, x=coef, y=-log10(pval_individual))) +
+  geom_text_repel(data=subset(EC_results %>% filter(is.na(error)) %>% filter(model=="Prevalence"), pval_individual < 0.00000001), aes(label=feature, x=coef, y=-log10(pval_individual)))
+
+volcano_EC
+
+
+###make ven diagram
+fat_abund_EC <- EC_results %>% filter(is.na(error)) %>% 
+  filter(value=="High Fat") %>%
+  filter(qval_individual < 0.1) %>%
+  filter(model=="Abundance") %>% 
+  pull(feature)
+
+fat_abund_EC
+
+fat_prev_EC <- EC_results %>% filter(is.na(error)) %>%
+  filter(value=="High Fat") %>%
+  filter(qval_individual < 0.1) %>%
+  filter(model=="Prevalence") %>%
+  pull(feature)
+
+length(fat_prev_EC)
+
+
+prot_abund_EC <- EC_results %>% filter(is.na(error)) %>%
+  filter(value=="High Protein") %>%
+  filter(qval_individual < 0.1) %>%
+  filter(model=="Abundance") %>%
+  pull(feature)
+prot_abund_EC
+
+prot_prev_EC <- EC_results %>% filter(is.na(error)) %>%
+  filter(value=="High Protein") %>%
+  filter(qval_individual < 0.1) %>%
+  filter(model=="Prevalence") %>%
+  pull(feature)
+prot_prev_EC
+
+#keep those that error out in this calculation
+abundance_nonsig_EC <- EC_results %>% 
+ # filter(is.na(error)) %>%
+  filter(metadata=="Diet") %>%
+  filter(model=="Abundance") %>%
+  filter(!feature %in% fat_abund_EC) %>%
+  filter(!feature %in% prot_abund_EC) %>%
+  pull(feature) %>%
+  unique()
+
+prev_nonsig_EC <- EC_results %>%
+  filter(metadata=="Diet") %>%
+  filter(model=="Prevalence") %>%
+  filter(!feature %in% fat_prev_EC) %>%
+  filter(!feature %in% prot_prev_EC) %>%
+  pull(feature) %>%
+  unique()
+  
+
+length(intersect(fat_abund_EC, fat_prev_EC))
+
+length(fat_abund_EC)
+length(fat_prev_EC)
+
+length(intersect(prot_abund_EC, prot_prev_EC))
+
+length(prot_abund_EC)
+length(prot_prev_EC)
+#Abundance overlap
+Abundance_sigs_EC <- list("High Fat"=fat_abund_EC, "High Protein"=prot_abund_EC, "Non-Significant"=abundance_nonsig_EC)
+Prevalence_sigs <- list("High Fat"=fat_prev_EC, "High Protein"=prot_prev_EC)
+
+abund_venn_EC <- ggvenn(Abundance_sigs_EC, c("High Fat", "High Protein"), set_name_size = 4, fill_color=c("darkslateblue", "steelblue"), show_percentage = F) +
+  annotate("text", x = 0, y = -1.1, label = "Non-Significant\n1166", size = 4)
+abund_venn_EC
+
+prev_venn_EC <- ggvenn(Prevalence_sigs, set_name_size = 4, fill_color=c("darkslateblue", "steelblue"),
+                    show_percentage = F) +
+  annotate("text", x=0, y=-1.1, label="Non-Significant\n1728")
+prev_venn_EC
+
+sup_plot_paths <- volcano_EC/(abund_venn_EC + prev_venn_EC)
+sup_plot_paths
+
+ggsave("Display_Items/From_Figure3_script/Supplemental_volcano_ven_EC.pdf",
+       width=12, height=8)
+ggsave("Display_Items/From_Figure3_script/Supplemental_volcano_ven_EC.png",
+       width=12, height=8)
+```
+
+
+# Plot contribution plots
+
+## Functions
+```{r}
+
+#takes in a data frame and splits them into multiple data frames based on a prefix.
+split_data_frame_by_prefix <- function(data, prefixes) {
+  #make return list
+  split_dfs <- list()
+  
+  #for each prefix we first select the columns from the original data to pull out
+  # and put them in the return list
+  for (prefix in prefixes) {
+    selected_columns <- select(data, starts_with(prefix))
+    split_dfs[[prefix]] <- selected_columns
+  }
+  return(split_dfs)
+}
+
+#function to write the average contribution and turns it into %
+average_contribution_data_prep <- function(stratified_data, intFeatures, metadata, bug_data,
+                                           contribution_threshold=0.1){
+  
+  ##first we filtered the stratified_data so that it only grabs the intFeatures (features that we are interested in)
+  #clean clean up the pathway names to match the naming convention of the pathways of interest
+  colnames(stratified_data) <- stringi::stri_replace_all_regex(colnames(stratified_data), "\\p{Punct}", ".")
+  colnames(stratified_data) <- stringi::stri_replace_all_regex(colnames(stratified_data), "\\s", ".")
+  #create a list of dfs for each feature of interest where each list contains the contribution in RPKM 
+  #of each statified taxon
+  split_dfs <- split_data_frame_by_prefix(stratified_data, as.character(intFeatures))
+
+  #check if any of the split_dfs are empty
+  #if any are empty this would be an error and we will quit
+  for(i in split_dfs){
+    stopifnot(dim(i)[2] > 0)
+  }
+  
+  #next we sweep out the RPKM into contribution % (TSS scaling)
+  ## this can create NAs when everything is 0 for a pathway in that sample.
+  contribution_values <- list() 
+  for(i in 1:length(split_dfs)){
+    contribution_values[[i]] <- sweep(split_dfs[[i]], MARGIN = 1, STATS = rowSums(split_dfs[[i]], na.rm = T), '/')
+  }
+  
+  #Add them all back to one single data frame
+  contribution_values_df <- do.call(cbind, contribution_values)
+  #stop function if rows don't match up between current df and metadata
+  stopifnot(identical(rownames(contribution_values_df), rownames(metadata)))
+  
+  #Add diet to the new data frame so that it can be melted by diet
+  contribution_values_df$Diet <- metadata$Diet
+  
+  ## melt the data frame by diet and then seperate the feature names by EC (or pathway) and Microbe
+  ## some of these can be NA (i.e. they didn't contribute)
+  contribution_values_df_melt <- contribution_values_df %>% reshape2::melt(id.vars="Diet") %>%
+  tidyr::separate(variable, "\\|", into=c("EC", "Microbe"))
+
+  #We then group by the Diet, EC, and Microbe and calculate the mean contribution for each microbe to that EC
+  #within each dietary group
+  ## We also remove NAs meaning if a sample didn't have that pathway then they don't show up here. 
+  contribution_values_df_melt_average <- contribution_values_df_melt %>% group_by(Diet, EC, Microbe) %>%
+    summarise(mean=mean(value, na.rm=T))
+
+  #set anything below 10% contrubtion to "other"
+  contribution_values_df_melt_average <- contribution_values_df_melt_average %>% ungroup %>%
+    mutate(plot_value=ifelse(Diet=='High Carb', -mean, mean)) %>% 
+    mutate(Microbe_label=ifelse(mean >= contribution_threshold, Microbe, "Other"))
+
+  #fix microbe labels by matching SGBs
+  mic_names <- unique(contribution_values_df_melt_average$Microbe_label)
+  ##need to clean these up
+  SGB_nums <- gsub(".*\\.t\\.\\.", "", mic_names)
+  SGB_nums <- gsub("\\.group", "", SGB_nums)
+  SGB_matches <- SGB_nums[SGB_nums!="Other"]
+  SGB_matches <- SGB_matches[SGB_matches!="unclassified"]
+
+  SGB_indexs <- lapply(SGB_matches, function(x){
+    matchs <- grep(x, colnames(bug_data), value=T)
+    return(matchs)
+  })
+
+  names(SGB_indexs) <- gsub(".*_SGB", "SGB", SGB_indexs)
+  names(SGB_indexs) <- gsub("\\.group", "", names(SGB_indexs))
+  names(SGB_indexs) <- gsub("_group", "", names(SGB_indexs))
+  
+  ## add it to dataframe
+  contribution_values_df_melt_average$SGB <- gsub(".*t\\.\\.", "", contribution_values_df_melt_average$Microbe_label)
+  contribution_values_df_melt_average$SGB <- gsub("\\.group", "", contribution_values_df_melt_average$SGB)
+  contribution_values_df_melt_average$SGB <- gsub("_group", "", contribution_values_df_melt_average$SGB)
+  
+  contribution_values_df_melt_average$Fixed_names <-
+    unlist(SGB_indexs)[match(contribution_values_df_melt_average$SGB, names(SGB_indexs))]
+  #fix up some names here
+  contribution_values_df_melt_average$Fixed_names[which(contribution_values_df_melt_average$Microbe_label=="Other")] <- "Other"
+    contribution_values_df_melt_average$Fixed_names[which(contribution_values_df_melt_average$Microbe_label=="unclassified")] <- "unclassified"
+  
+  return(contribution_values_df_melt_average)
+}
+
+
+##this function takes the average contributions as calculated in average_contribution_data
+## and returns the difference in contribution between the high fat diet (list 1) and high protein diet (list 2)
+## this is done by the following formula: MEAN_LC_bug_contribution - MEAN_HC_bug_contribution
+## Negative values mean a higher contribution from HC
+## Positive values mean a higher contribution from LC
+contribution_differences <- function(contribution_df, contribution_threshold=0.1, bug_data){
+  
+  ##How to deal with NAs here if the microbe wasn;'t found?
+  
+  ##for now we just filter these out..
+  contribution_df <- contribution_df %>% filter(!is.na(mean))
+  
+  ##Prep protein difference plot
+  Protein_diffs <- contribution_df %>% 
+    filter(Diet=="High Protein" | Diet=="High Carb") %>%
+    group_by(EC, Microbe) %>% 
+    summarize("Contribution Difference"=mean[Diet=="High Protein"] - mean[Diet=="High Carb"]) %>%
+    ungroup()
+  
+  Protein_diffs <- Protein_diffs %>% 
+    mutate(Diff_lab=ifelse(abs(`Contribution Difference`) >= contribution_threshold, Microbe, "Other"))
+  
+  #We could turn this into a function at some point...
+  mic_names <- unique(Protein_diffs$Diff_lab)
+  ##need to clean these up
+  SGB_nums <- gsub(".*\\.t\\.\\.", "", mic_names)
+  SGB_nums <- gsub("\\.group", "", SGB_nums)
+  SGB_matches <- SGB_nums[SGB_nums!="Other"]
+  SGB_matches <- SGB_matches[SGB_matches!="unclassified"]
+
+  SGB_indexs <- lapply(SGB_matches, function(x){
+    matchs <- grep(x, colnames(bug_data), value=T)
+    return(matchs)
+  })
+    
+  names(SGB_indexs) <- gsub(".*_SGB", "SGB", SGB_indexs)
+  names(SGB_indexs) <- gsub("\\.group", "", names(SGB_indexs))
+  names(SGB_indexs) <- gsub("_group", "", names(SGB_indexs))
+  
+  ## add it to dataframe
+  Protein_diffs$SGB <- gsub(".*t\\.\\.", "", Protein_diffs$Diff_lab)
+  Protein_diffs$SGB <- gsub("\\.group", "", Protein_diffs$SGB)
+  Protein_diffs$SGB <- gsub("_group", "", Protein_diffs$SGB)
+  
+  
+  Protein_diffs$Fixed_names <-
+    unlist(SGB_indexs)[match(Protein_diffs$SGB, names(SGB_indexs))]
+  
+  Protein_diffs$Fixed_names[which(Protein_diffs$Diff_lab=="Other")] <- "Other"
+  
+  Protein_diffs$Fixed_names[which(Protein_diffs$Diff_lab=="unclassified")] <- "unclassified"
+  
+  
+  ## do the same as above for Fat...
+  Fat_diffs <- contribution_df %>% 
+    filter(Diet=="High Fat" | Diet=="High Carb") %>%
+    group_by(EC, Microbe) %>% 
+    summarize("Contribution Difference"=mean[Diet=="High Fat"] - mean[Diet=="High Carb"]) %>%
+    ungroup()
+  
+  Fat_diffs <- Fat_diffs %>% 
+    mutate(Diff_lab=ifelse(abs(`Contribution Difference`) >= contribution_threshold, Microbe, "Other"))
+  
+  #We could turn this into a function at some point...
+  mic_names <- unique(Fat_diffs$Diff_lab)
+  ##need to clean these up
+  SGB_nums <- gsub(".*\\.t\\.\\.", "", mic_names)
+  SGB_nums <- gsub("\\.group", "", SGB_nums)
+  SGB_matches <- SGB_nums[SGB_nums!="Other"]
+  SGB_matches <- SGB_matches[SGB_matches!="unclassified"]
+
+  SGB_indexs <- lapply(SGB_matches, function(x){
+    matchs <- grep(x, colnames(bug_data), value=T)
+    return(matchs)
+  })
+    
+  names(SGB_indexs) <- gsub(".*_SGB", "SGB", SGB_indexs)
+  names(SGB_indexs) <- gsub("\\.group", "", names(SGB_indexs))
+  names(SGB_indexs) <- gsub("_group", "", names(SGB_indexs))
+  
+  
+  ## add it to dataframe
+  Fat_diffs$SGB <- gsub(".*t\\.\\.", "", Fat_diffs$Diff_lab)
+  Fat_diffs$SGB <- gsub("\\.group", "", Fat_diffs$SGB)
+  Fat_diffs$SGB <- gsub("_group", "", Fat_diffs$SGB)
+  
+  Fat_diffs$Fixed_names <-
+    unlist(SGB_indexs)[match(Fat_diffs$SGB, names(SGB_indexs))]
+  
+  Fat_diffs$Fixed_names[which(Fat_diffs$Diff_lab=="Other")] <- "Other"
+  
+  Fat_diffs$Fixed_names[which(Fat_diffs$Diff_lab=="unclassified")] <- "unclassified"
+  
+  
+  return(list(Fat_diffs, Protein_diffs))
+}
+
+
+
+average_contribution_data_prep_RPKM <- function(stratified_data, intFeatures, metadata, bug_data,
+                                           contribution_threshold=0.1){
+  
+  ##first we filtered the stratified_data so that it only grabs the intFeatures (features that we are interested in)
+  #clean clean up the pathway names to match the naming convention of the pathways of interest
+  colnames(stratified_data) <- stringi::stri_replace_all_regex(colnames(stratified_data), "\\p{Punct}", ".")
+  colnames(stratified_data) <- stringi::stri_replace_all_regex(colnames(stratified_data), "\\s", ".")
+  
+  #create a list of dfs for each feature of interest where each list contains the contribution in RPKM 
+  #of each statified taxon
+  split_dfs <- split_data_frame_by_prefix(stratified_data, as.character(intFeatures))
+  #check if any of the split_dfs are empty
+  #if any are empty this would be an error and we will quit
+  for(i in split_dfs){
+    stopifnot(dim(i)[2] > 0)
+  }
+  
+  #next we sweep out the RPKM into contribution % (TSS scaling) - we don't do this if we keep RPKMs
+  #contribution_values <- list() 
+  #for(i in 1:length(split_dfs)){
+  #  contribution_values[[i]] <- sweep(split_dfs[[i]], MARGIN = 1, STATS = rowSums(split_dfs[[i]], na.rm = T), '/')
+  #}
+  
+  #Add them all back to one single data frame
+  contribution_values_df <- do.call(cbind, unname(split_dfs))
+  #stop function if rows don't match up between current df and metadata
+  stopifnot(identical(rownames(contribution_values_df), rownames(metadata)))
+  
+  #Add diet to the new data frame so that it can be melted by diet
+  contribution_values_df$Diet <- metadata$Diet
+  
+  ## melt the data frame by diet and then seperate the feature names by EC (or pathway) and Microbe
+  ## note that we say EC here but it could also mean pathway...
+  contribution_values_df_melt <- contribution_values_df %>% reshape2::melt(id.vars="Diet") %>%
+  tidyr::separate(variable, "\\|", into=c("EC", "Microbe"))
+
+  #We then group by the Diet, EC, and Microbe and calculate the mean contribution for each microbe to that EC
+  #within each dietary group
+  contribution_values_df_melt_average <- contribution_values_df_melt %>% group_by(Diet, EC, Microbe) %>%
+    summarise(mean=mean(value, na.rm=T))
+
+  #set anything below threshold contrubtion to "other"
+  #we also set high carb to be negative balues and others as positive this is abused for plotting 
+  #although maybe we should just plot them as three individual bars as a dodge position?
+  #have to think about this...
+  contribution_values_df_melt_average <- contribution_values_df_melt_average %>% ungroup %>%
+    mutate(plot_value=ifelse(Diet=='High Carb', -mean, mean)) %>% 
+    mutate(Microbe_label=ifelse(mean >= contribution_threshold, Microbe, "Other"))
+
+  #fix microbe labels by matching SGBs
+  mic_names <- unique(contribution_values_df_melt_average$Microbe_label)
+  ##need to clean these up
+  SGB_nums <- gsub(".*\\.t\\.\\.", "", mic_names)
+  SGB_nums <- gsub("\\.group", "", SGB_nums)
+  SGB_matches <- SGB_nums[SGB_nums!="Other"]
+  SGB_matches <- SGB_matches[SGB_matches!="unclassified"]
+
+  SGB_indexs <- lapply(SGB_matches, function(x){
+    matchs <- grep(x, colnames(bug_data), value=T)
+    return(matchs)
+  })
+
+  names(SGB_indexs) <- gsub(".*_SGB", "SGB", SGB_indexs)
+  names(SGB_indexs) <- gsub("\\.group", "", names(SGB_indexs))
+  names(SGB_indexs) <- gsub("_group", "", names(SGB_indexs))
+  
+  
+  ## add it to dataframe
+  contribution_values_df_melt_average$SGB <- gsub(".*t\\.\\.", "", contribution_values_df_melt_average$Microbe_label)
+  contribution_values_df_melt_average$SGB <- gsub("\\.group", "", contribution_values_df_melt_average$SGB)
+  contribution_values_df_melt_average$SGB <- gsub("_group", "", contribution_values_df_melt_average$SGB)
+
+  contribution_values_df_melt_average$Fixed_names <-
+    unlist(SGB_indexs)[match(contribution_values_df_melt_average$SGB, names(SGB_indexs))]
+  #fix up some names here
+  contribution_values_df_melt_average$Fixed_names[which(contribution_values_df_melt_average$Microbe_label=="Other")] <- "Other"
+    contribution_values_df_melt_average$Fixed_names[which(contribution_values_df_melt_average$Microbe_label=="unclassified")] <- "unclassified"
+  
+  return(list(contribution_values_df_melt_average, contribution_values_df_melt))
+}
+
+```
+
+
+
+# Plot contribution data on TSS scale
+```{r}
+#get average contributions
+average_cont_df <- average_contribution_data_prep(pathway_strat, intFeatures = pathways_of_interest, 
+                                                  metadata=metadata, bug_data = bug, 
+                                                  contribution_threshold = .075)
+
+#set EC names as factors so they are plotted in a consistent order
+average_cont_df$EC_fact <- factor(average_cont_df$EC, levels=levels(pathways_of_interest))
+
+## Calculate the contributuon differences
+average_cont_diff_df <- contribution_differences(average_cont_df, contribution_threshold = 0.075, bug_data=bug)
+
+#first one is fat
+average_cont_diff_df[[1]]$EC_fact <- factor(average_cont_diff_df[[1]]$EC, levels=levels(pathways_of_interest))
+# second one is protein
+average_cont_diff_df[[2]]$EC_fact <- factor(average_cont_diff_df[[2]]$EC, levels=levels(pathways_of_interest))
+
+
+## get all microbes that will be displayed in either plot
+all_microbes <- c(as.character(average_cont_df$Fixed_names), 
+                       as.character(average_cont_diff_df[[1]]$Fixed_names), 
+                       as.character(average_cont_diff_df[[2]]$Fixed_names))
+
+
+#Put other and unclassified at the start of the list.
+total_microbes <- unique(all_microbes)
+other_index <- which(total_microbes=="Other")
+unclass_index <- which(total_microbes=="unclassified")
+
+total_microbes_reorder <- total_microbes[-c(other_index, unclass_index)]
+total_microbes <- c("Other", "unclassified", total_microbes_reorder)
+
+#set the factor for names so they are plotted in the same order and same colors between all plots
+average_cont_df$Fixed_names <- factor(average_cont_df$Fixed_names, levels=total_microbes)
+average_cont_diff_df[[1]]$Fixed_names <- factor(average_cont_diff_df[[1]]$Fixed_names, levels=total_microbes)
+average_cont_diff_df[[2]]$Fixed_names <- factor(average_cont_diff_df[[2]]$Fixed_names, levels=total_microbes)
+
+
+
+## total of 26 microbes
+##if its above 35 stop
+stopifnot(length(total_microbes) < 35)
+
+color_vector <- RColorBrewer::brewer.pal(9, "Set1") # 'Set1' provides up to 9 colors
+#setup colors
+extended_colors <- colorRampPalette(color_vector)(length(total_microbes))
+
+names(extended_colors) <- total_microbes
+extended_colors[which(names(extended_colors)=="Other")] <- "grey"
+
+#set up the Fixed_names as factors
+
+### Save a dumby DF with all the possible taxa
+dumby_df <- data.frame(Microbe=factor(names(extended_colors), levels=total_microbes),
+                       values=1,
+                       type="cool")
+
+dumby_df %>% ggplot(aes(x=values, y=type, fill=Microbe)) + geom_col() +
+  scale_fill_manual(values=extended_colors)
+
+ggsave(filename = "Display_Items/From_Figure3_script/contribution_legend_TSS.pdf",
+       width=10, height=10)
+## this is the dumby legend plot
+```
+
+## Make plots
+```{r}
+## plot the protein average plot
+## we do this by first filtering to high protein or high carb 
+## then we plot Fixed names which are the microbes that passed the threshold
+Protein_avg_plot <- average_cont_df %>% filter(Diet=="High Protein" | Diet=="High Carb") %>% 
+  ggplot(aes(x=plot_value, y=EC_fact, fill = Fixed_names)) +
+  geom_col() +
+  geom_vline(xintercept = 0) +
+  scale_fill_manual(values=extended_colors) + xlab("Mean Contribution %") +
+  ylab("Pathway") +
+  theme_bw(base_size = 10)
+
+Protein_avg_plot
+
+ggsave(filename = "Display_Items/From_Figure3_script/Protein_avg_contribution_TSS.pdf",
+       width=12, height=6)
+
+# Fat plot
+Fat_avg_plot <- average_cont_df %>% filter(Diet=="High Fat" | Diet=="High Carb") %>% 
+  ggplot(aes(x=plot_value, y=EC_fact, fill=Fixed_names)) +
+  geom_col() +
+  geom_vline(xintercept = 0) +
+  scale_fill_manual(values=extended_colors) +
+  xlab("Mean Contribution %") +
+  ylab("Pathway") +
+  theme_bw(base_size = 10)
+
+Fat_avg_plot
+
+ggsave(filename = "Display_Items/From_Figure3_script/Fat_avg_contribution_TSS.pdf",
+       width=12, height=6)
+
+## we do the same for the differences
+Fat_diff_plot <- average_cont_diff_df[[1]] %>% 
+  ggplot(aes(x=`Contribution Difference`, y=EC_fact, fill=Fixed_names)) +
+  geom_col() +
+  geom_vline(xintercept = 0) +
+  scale_fill_manual(values=extended_colors) +
+  xlab("Mean Difference in Contribution %") +
+  ylab("Pathway") +
+  theme_bw(base_size = 10) +
+  xlim(-0.81, 0.81)
+
+Fat_diff_plot
+ggsave(filename = "Display_Items/From_Figure3_script/Fat_diff_contribution_TSS.pdf",
+       width=12, height=6)
+
+Protein_diff_plot <- average_cont_diff_df[[2]] %>% 
+  ggplot(aes(x=`Contribution Difference`, y=EC_fact, fill=Fixed_names)) +
+  geom_col() +
+  geom_vline(xintercept = 0) +
+  scale_fill_manual(values=extended_colors) +
+  xlab("Mean Difference in Contribution %") +
+  ylab("Pathway") +
+  theme_bw(base_size = 10) +
+  xlim(-0.81, 0.81)
+
+Protein_diff_plot
+
+ggsave(filename = "Display_Items/From_Figure3_script/Protein_diff_contribution_TSS.pdf",
+       width=12, height=6)
+```
+
+
+
+
+# RPKM plots
+In this case we do the same as above but in RPKM space rather then TSS space
+
+## Average contributions
+```{r}
+## Calculate the contribution averages on RPKM scale
+plot_df_RPKMs <- average_contribution_data_prep_RPKM(stratified_data = pathway_strat, 
+                                                     intFeatures = pathways_of_interest, 
+                                                     metadata = metadata,bug_data = bug, contribution_threshold = 100)
+##we are going to plot them all on positive scale here.
+plot_df_RPKMs[[1]]$mean <- abs(plot_df_RPKMs[[1]]$mean)
+##set factors for Diet so we know what order they are displayed.
+plot_df_RPKMs[[1]]$Diet <- factor(plot_df_RPKMs[[1]]$Diet, levels=c("High Fat", "High Protein", "High Carb"))
+
+##get colors
+mycolors <- palette36.colors(19)
+mycolors <- unname(mycolors)
+
+levels(pathways_of_interest)
+
+#set EC as factor so they are plotted consistently
+plot_df_RPKMs[[1]]$EC <- factor(plot_df_RPKMs[[1]]$EC, levels=levels(pathways_of_interest))
+
+p1 <- plot_df_RPKMs[[1]] %>% ggplot(aes(x=mean, y=EC, group=Diet)) + geom_col(aes(fill=Fixed_names), position = position_dodge(width=.8), width=.7) + scale_x_continuous(trans=scales::pseudo_log_trans(base=10)) + 
+  scale_fill_manual(values=mycolors) + theme_classic()
+
+p1  + guides(fill="none")
+#get the legend for p1
+legend <- get_legend(p1)
+
+
+
+ggsave(filename="Display_Items/From_Figure3_script/RPKM_contribution_plot_Bars.pdf", height=12, width=12)
+
+plot(legend)
+
+ggsave(filename="Display_Items/From_Figure3_script/RPKM_contribution_legend_Bars.pdf", height=12, width=12)
+```
+
+# Specific to each food
+
+```{r}
+##get number not in shared and specific to protein
+protein_specific<- pathway_results %>% filter(metadata=="Diet") %>% filter(value=="High Protein") %>% filter(qval_individual < 0.1)
+
+fat_specific<- pathway_results %>% filter(metadata=="Diet") %>% filter(value=="High Fat") %>% filter(qval_individual < 0.1)
+
+HC_assocaitions <- intersect(protein_specific$feature, fat_specific$feature)
+
+
+HC_specific <- protein_specific %>% filter(feature %in% HC_assocaitions)
+
+LCP_specific <- protein_specific %>% filter(!feature %in% HC_assocaitions)
+LCF_specific <- fat_specific %>% filter(!feature %in% HC_assocaitions)
+```
+
+### HC assocation plot
+```{r}
+HC_pathways <- HC_specific %>% arrange(qval_individual) %>% pull(feature) %>% head(n=5)
+
+
+plot_df_RPKMs <- average_contribution_data_prep_RPKM(stratified_data = pathway_strat, 
+                                                     intFeatures = HC_pathways, 
+                                                     metadata = metadata,bug_data = bug, contribution_threshold = 85)
+plot_df_RPKMs[[1]]$mean <- abs(plot_df_RPKMs[[1]]$mean)
+
+
+library(scales)
+
+plot_df_RPKMs[[1]] %>% ggplot(aes(x=mean, y=EC, group=Diet)) + geom_col(aes(fill=Fixed_names), position = position_dodge(width=.8), width=.7) + scale_x_log10() + scale_x_continuous(trans=scales::pseudo_log_trans(base=10)) + 
+  scale_color_brewer()
+```
+
+### LCF assocation plot
+
+```{r}
+LCF_pathways <- LCF_specific %>% arrange(qval_individual) %>% pull(feature) %>% head(n=5)
+
+
+plot_df_RPKMs <- average_contribution_data_prep_RPKM(stratified_data = pathway_strat, 
+                                                     intFeatures = LCF_pathways, 
+                                                     metadata = metadata,bug_data = bug, contribution_threshold = 85)
+plot_df_RPKMs[[1]]$mean <- abs(plot_df_RPKMs[[1]]$mean)
+
+
+plot_df_RPKMs[[1]] %>% ggplot(aes(x=mean, y=EC, group=Diet)) + geom_col(aes(fill=Fixed_names), position = position_dodge(width=.8), width=.7) + scale_x_log10() + scale_x_continuous(trans=scales::pseudo_log_trans(base=10)) + 
+  scale_color_brewer()
+```
+
+
+### LCP assocation plot
+
+```{r}
+LCP_pathways <- LCP_specific %>% arrange(qval_individual) %>% pull(feature) %>% head(n=5)
+
+
+plot_df_RPKMs <- average_contribution_data_prep_RPKM(stratified_data = pathway_strat, 
+                                                     intFeatures = LCP_pathways, 
+                                                     metadata = metadata,bug_data = bug, contribution_threshold = 85)
+plot_df_RPKMs[[1]]$mean <- abs(plot_df_RPKMs[[1]]$mean)
+
+plot_df_RPKMs[[1]] %>% ggplot(aes(x=mean, y=EC, group=Diet)) + geom_col(aes(fill=Fixed_names), position = position_dodge(width=.8), width=.7) + scale_x_log10() + scale_x_continuous(trans=scales::pseudo_log_trans(base=10)) + 
+  scale_color_brewer()
+
+```
+
+
+
+# RPK difference plot
+
+
+So some of these bars will not match with the coef because og bag of genes model vs. taxon specific model
+Bars that are dispoportionate to the coef suggest that many of the ECs are shared between microbes
+```{r}
+plot_df_RPKMs <- average_contribution_data_prep_RPKM(stratified_data = pathway_strat, 
+                                                     intFeatures = pathways_of_interest, 
+                                                     metadata = metadata,bug_data = bug, contribution_threshold = 0)
+
+RPKM_mean_diffs <- contribution_differences(plot_df_RPKMs[[1]], contribution_threshold = 0, bug_data = bug)
+### why are things getting put into other when contribution threshold is 0?
+### of its because of the upper step
+##Protein in [[2]]
+##Fat in [[1]]
+
+
+###instead of a cutoff lets just grab the top 15 microbes that have the largest
+## contributional differences across any EC we do this on the abolsute scale since high carb will be -
+Fat_microbes <- RPKM_mean_diffs[[1]] %>% group_by(EC, Microbe) %>% arrange(desc(abs(`Contribution Difference`))) %>% pull(Fixed_names) %>%
+  unique() %>% head(15)
+
+Fat_microbes <- c("Other", Fat_microbes)
+
+## we do the same for protein
+###instead of a cutoff lets just grab the top 15 microbes that have the largest contributional differences across any EC
+Protein_microbes <- RPKM_mean_diffs[[2]] %>% group_by(EC, Microbe) %>% arrange(desc(abs(`Contribution Difference`))) %>% pull(Fixed_names) %>%
+  unique() %>% head(n=15)
+
+Protein_microbes <- c("Other", Protein_microbes)
+
+#grab all microbes
+all_microbes <- unique(c(Protein_microbes, Fat_microbes))
+length(all_microbes)
+
+#Make unclassified and then Other
+all_microbes <- all_microbes[-which(all_microbes=="unclassified")] 
+all_microbes <- sort(all_microbes)
+all_microbes <- all_microbes[-which(all_microbes=="Other")]
+all_microbes <- c("unclassified", "Other", all_microbes)
+
+#set the colors
+plot_colors <- palette36.colors(n=length(all_microbes)-1)
+plot_colors <- c("grey", plot_colors)
+names(plot_colors) <- all_microbes
+plot_colors[3] <- "#3B00FB"
+
+
+## Set plotting data for FAT
+##set up a new column for the names that we plot
+RPKM_mean_diffs[[1]]$plot_names <- RPKM_mean_diffs[[1]]$Fixed_names
+##here we set anything not in Fac_microbes as Other except we shouldn't do that yet!
+RPKM_mean_diffs[[1]]$plot_names[which(!RPKM_mean_diffs[[1]]$Fixed_names %in% all_microbes)] <- "Other"
+RPKM_mean_diffs[[1]]$plot_names <- factor(RPKM_mean_diffs[[1]]$plot_names, levels=c(names(plot_colors)))
+
+RPKM_mean_diffs[[1]]$EC_fact <- factor(RPKM_mean_diffs[[1]]$EC, levels=levels(pathways_of_interest))
+
+
+
+RPKM_mean_diffs[[2]]$plot_names <- RPKM_mean_diffs[[2]]$Fixed_names
+RPKM_mean_diffs[[2]]$plot_names[which(!RPKM_mean_diffs[[2]]$Fixed_names %in% all_microbes)] <- "Other"
+RPKM_mean_diffs[[2]]$plot_names <- factor(RPKM_mean_diffs[[2]]$plot_names, levels=c(names(plot_colors)))
+
+RPKM_mean_diffs[[2]]$EC_fact <- factor(RPKM_mean_diffs[[2]]$EC, levels=levels(pathways_of_interest))
+
+
+
+Protein_diff_plot <- RPKM_mean_diffs[[2]] %>% 
+  ggplot(aes(x=`Contribution Difference`, y=EC_fact, fill=plot_names)) +
+  geom_col() +
+  geom_vline(xintercept = 0) +
+  scale_fill_manual(values=plot_colors) +
+  xlab("Mean Difference in Taxon RPKM Contribution") +
+  ylab("Pathway") +
+  theme_bw(base_size = 10)
+
+Protein_diff_plot
+ggsave("Display_Items/From_Figure3_script/Protein_RPKM_differene_cont_RPKM.pdf", height=6, width=12)
+
+
+
+Fat_diff_plot <- RPKM_mean_diffs[[1]] %>% 
+  ggplot(aes(x=`Contribution Difference`, y=EC_fact, fill=plot_names)) +
+  geom_col() +
+  geom_vline(xintercept = 0) +
+  scale_fill_manual(values=plot_colors) +
+  xlab("Mean Difference in Taxon RPKM Contribution") +
+  ylab("Pathway") +
+  theme_bw(base_size = 10)
+
+Fat_diff_plot
+ggsave("Display_Items/From_Figure3_script/Fat_RPKM_differene_cont_RPKM.pdf", height=6, width=12)
+
+
+
+## dumby legend
+### Save a dumby DF with all the possible taxa
+dumby_df <- data.frame(Microbe=factor(names(plot_colors), levels=names(plot_colors)),
+                       values=1,
+                       type="cool")
+
+dumby_df %>% ggplot(aes(x=values, y=type, fill=Microbe)) + geom_col() +
+  scale_fill_manual(values=plot_colors)
+
+ggsave(filename = "Display_Items/From_Figure3_script/contribution_legend_RPKM.pdf",
+       width=10, height=10)
+
+```
+
+
+

@@ -1,0 +1,120 @@
+---
+title: "Figure4_Draft1"
+author: "Jacob T. Nearing Ph.D."
+date: "2024-11-29"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir = getwd())
+
+#source helper functions
+source("Utility_Scripts/helper_functions.R")
+source("Utility_Scripts/load_data_functions.R")
+
+library(maaslin3)
+library(ggplot2)
+library(patchwork)
+library(ggpubr)
+library(pals)
+library(ComplexHeatmap)
+```
+
+
+```{r}
+col_diets = c("High Carb" = "red3", "High Fat" = "darkslateblue", "High Protein" = "steelblue")
+default_anno_cols <- list(
+  diet=col_diets,
+  Diet=col_diets,
+  `Diet Order Names`=c(`High Protein --> High Fat`="purple",
+                       `High Fat --> High Protein`="orange"))
+
+```
+
+```{r}
+bug <- load_taxa_data()
+bug_common <- bug[,is_common(t(bug))]
+  
+metadata <- load_meta_data(m4_data = bug)
+metadata$Diet <- metadata$`Diet Name`
+metadata$Age <- metadata$`age (yr)`
+metadata$DogID <- metadata$`Animal Name`
+metadata$dietOrder <- metadata$`Diet Order Names`
+
+fecal_mbx <- load_fecalMbx_data(metadata)
+
+bug$`Metagenomics Sample Number` <- rownames(bug)
+fecal_mbx$`Metagenomics Sample Number` <- rownames(fecal_mbx)
+
+metadata_bug <- metadata %>% left_join(bug) %>% left_join(fecal_mbx)
+```
+
+
+```{r}
+prev_filter_bug <- function(x, thres=0.2){
+  n_rows <- nrow(x)
+  threshold <- n_rows*0.2
+  
+  keep_list <- apply(x, 2, function(x) if(length(which(x!=0)) > threshold)
+                                             return(T)
+                                             else 
+                                               return(F))
+  
+  return(x[,keep_list])
+  
+}
+
+prev_filter_metabolite <- function(x, threshold=0.2){
+  n_rows <- nrow(x)
+  threshold <- n_rows*0.2
+  keep_list <- apply(x, 2, function(x) if(length(which(x!=min(x))) > threshold)
+                                          return(T)
+                                          else
+                                            return(F))
+  return(x[,keep_list])
+}
+
+```
+# Prep tables for HALLA
+
+```{r}
+identical(rownames(bug_common), metadata$`Metagenomics Sample Number`)
+identical(rownames(fecal_mbx), metadata$`Metagenomics Sample Number`)
+
+bug_common$Diet <- metadata$Diet
+fecal_mbx$Diet <- metadata$Diet
+
+Carb_bug_common <- bug_common %>% filter(Diet=="High Carb") %>% select(-"Diet")
+Carb_fecal_mbx <- fecal_mbx %>% filter(Diet=="High Carb") %>% select(-"Diet")
+
+## need to some filtering so bugs are at least 20% prev. 
+
+Carb_bug_common_filt <- prev_filter_bug(Carb_bug_common)
+Carb_fecal_mbx_filt <- prev_filter_metabolite(Carb_fecal_mbx)
+write.table(x=t(Carb_bug_common_filt), file="../HALLA/Inputs/Carb_bug_filt.tsv", sep="\t", quote=F, col.names=NA)
+write.table(x=t(Carb_fecal_mbx_filt), file="../HALLA/Inputs/Carb_metabolites_filt.tsv", sep="\t", quote=F, col.names=NA)
+
+
+Fat_bug_common <- bug_common %>% filter(Diet=="High Fat") %>% select(-"Diet")
+Fat_fecal_mbx <- fecal_mbx %>% filter(Diet=="High Fat") %>% select(-"Diet")
+
+Fat_bug_common_filt <- prev_filter_bug(Fat_bug_common)
+Fat_fecal_mbx_filt <- prev_filter_metabolite(Fat_fecal_mbx)
+
+write.table(x=t(Fat_bug_common_filt), file="../HALLA/Inputs/Fat_bug_filt.tsv", sep="\t", quote=F, col.names=NA)
+write.table(x=t(Fat_fecal_mbx_filt), file="../HALLA/Inputs/Fat_metabolites_filt.tsv", sep="\t", quote=F, col.names=NA)
+
+
+Protein_bug_common <- bug_common %>% filter(Diet=="High Protein") %>% select(-"Diet")
+Protein_fecal_mbx <- fecal_mbx %>% filter(Diet=="High Protein") %>% select(-"Diet")
+
+Protein_bug_common_filt <- prev_filter_bug(Protein_bug_common)
+Protein_fecal_mbx_filt <- prev_filter_metabolite(Protein_fecal_mbx)
+
+write.table(x=t(Protein_bug_common_filt), file="../HALLA/Inputs/Protein_bug_filt.tsv", sep="\t", quote=F, col.names=NA)
+write.table(x=t(Protein_fecal_mbx_filt), file="../HALLA/Inputs/Protein_metabolites_filt.tsv", sep="\t", quote=F, col.names=NA)
+```
+
+
+

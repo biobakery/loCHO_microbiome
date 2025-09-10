@@ -1,0 +1,825 @@
+cluster_rank	cluster_X	cluster_Y	best_adjusted_pvalue
+1	Collinsella_intestinalis_SGB14741	NAD+;malate;2-methylcitrate/homocitrate;gamma-glutamyl-alpha-lysine;N-acetylglutamate;N-acetylhistidine	5.994305720157666e-05
+2	Muribaculaceae_SGB48227;Muribaculum_gordoncarteri_SGB2087	leucylalanine;N-acetyl-1-methylhistidine*;diacetylspermidine*;deoxycholic acid 12-sulfate*;N-palmitoyl-phytosphingosine (t18:0/16:0);4-cholesten-3-one	9.621331391783839e-05
+3	Muribaculaceae_SGB48227;Muribaculum_gordoncarteri_SGB2087	6-oxolithocholate;dehydrolithocholate;3-dehydrodeoxycholate;12-ketolithocholate	9.621331391783839e-05
+4	Collinsella_intestinalis_SGB14741	leucylalanine;N-acetyl-1-methylhistidine*;diacetylspermidine*;deoxycholic acid 12-sulfate*;N-palmitoyl-phytosphingosine (t18:0/16:0);4-cholesten-3-one	0.00016524147565663582
+5	Muribaculaceae_SGB48227;Muribaculum_gordoncarteri_SGB2087	1-methyl-4-imidazoleacetate;4-imidazoleacetate;erythritol;N-carbamoylputrescine;vanillate;N,N,N-trimethyl-alanylproline betaine (TMAP);creatinine	0.00016524147565663582
+6	Muribaculaceae_SGB48227;Muribaculum_gordoncarteri_SGB2087	2'-deoxyadenosine 5'-monophosphate;dCMP;TMP;phosphocholine;3'-dephospho-acetyl-CoA;glycerol 3-phosphate;nicotinic acid mononucleotide (NaMN);AMP;UMP;CMP	0.00018054977387432254
+7	Collinsella_intestinalis_SGB14741	1-methyl-4-imidazoleacetate;4-imidazoleacetate;erythritol;N-carbamoylputrescine;vanillate;N,N,N-trimethyl-alanylproline betaine (TMAP);creatinine	0.00019638141866441946
+8	Muribaculaceae_SGB48227;Muribaculum_gordoncarteri_SGB2087	N-acetylglucosaminylasparagine;arginine;guanine;glycerophosphoglycerol;alpha-ketoglutaramate*;methylphosphate;tyrosine;valylglutamine;glycylisoleucine;glycylleucine;glycylvaline;phenylalanine;alanine;methionine;isoleucine;leucine;valine;methionine sulfoxide;glycine;serine;threonine;glutamine;asparagine;riboflavin (Vitamin B2)	0.0002049040080971321
+9	Prevotellaceae_SGB1481;Prevotella_copri_clade_A_SGB1626	N-methylalanine	0.0003436469870186155
+10	Collinsella_intestinalis_SGB14741	dipicolinate;6-oxolithocholate;dehydrolithocholate;3-dehydrodeoxycholate;12-ketolithocholate	0.0003436469870186155
+11	Collinsella_intestinalis_SGB14741;Collinsella_SGB14744_SGB14744;Slackia_SGB14781_SGB14781;Slackia_faecicanis_SGB33547	N-methylhydantoin;hydroxystearate sulfate;8-hydroxyguanine	0.00040836661281305715
+12	Firmicutes_SGB63246	ribonate;lyxonate	0.0005202652750190758
+13	Muribaculaceae_SGB48227;Muribaculum_gordoncarteri_SGB2087	agmatine;N-acetylphenylalanine;N-acetylleucine	0.0005287912360046465
+14	Muribaculaceae_SGB48227	3-(2-hydroxyphenyl)propionate;3-phenylpropionate (hydrocinnamate);alpha-CEHC taurine*;azelaoyltaurine;gamma-CEHC taurine*;taurine;butyrylputrescine/isobutyrylputrescine;N-acetyltaurine;hexanoyltaurine;dopamine 3-O-sulfate;phenylacetyltaurine	0.0005920923445267948
+15	Collinsella_intestinalis_SGB14741	hexadecatrienoate (16:3n3)	0.0008527268593253221
+16	Prevotellaceae_SGB1481;Prevotella_copri_clade_A_SGB1626	guanine	0.0008666897729677645
+17	Muribaculaceae_SGB48227;Muribaculum_gordoncarteri_SGB2087	1-carboxyethylleucine;syringic acid;1-methyl-5-imidazoleacetate;glycitein;genistein;secoisolariciresinol;chrysoeriol;apigenin;naringenin	0.001197787090888359
+18	Slackia_SGB14781_SGB14781	N-palmitoyl-phytosphingosine (t18:0/16:0)	0.00133534100814144
+19	Ligilactobacillus_ruminis_SGB7061	harmane	0.00133534100814144
+20	Muribaculum_gordoncarteri_SGB2087	1-palmitoyl-2-linoleoyl-GPE (16:0/18:2);1-oleoyl-2-linoleoyl-GPE (18:1/18:2)*;1-linoleoyl-2-linolenoyl-GPC (18:2/18:3)*;1,2-dilinoleoyl-GPE (18:2/18:2)*;1-palmitoyl-2-linoleoyl-GPC (16:0/18:2);1-oleoyl-2-linoleoyl-GPC (18:1/18:2)*;1,2-dilinoleoyl-GPC (18:2/18:2)	0.0013523478154812366
+21	Erysipelotrichaceae_SGB105325	diacylglycerol (16:1/18:2 [2], 16:0/18:3 [1])*;linoleoyl-linoleoyl-glycerol (18:2/18:2) [2]*;palmitoyl-linoleoyl-glycerol (16:0/18:2) [2]*;oleoyl-linoleoyl-glycerol (18:1/18:2) [2]	0.0015441362956437382
+22	Collinsella_SGB14744_SGB14744;Slackia_SGB14781_SGB14781;Slackia_faecicanis_SGB33547	ornithine	0.001559812980018716
+23	Erysipelotrichaceae_SGB65947;Erysipelotrichaceae_SGB72140	butyrate/isobutyrate (4:0)	0.0016098832336207426
+24	Muribaculaceae_SGB48227;Muribaculum_gordoncarteri_SGB2087	N6,N6,N6-trimethyllysine;5-oxoproline;1-carboxyethyltyrosine;1-carboxyethylvaline;isoleucylhydroxyproline*;leucylhydroxyproline*	0.0016098832336207426
+25	Muribaculaceae_SGB2126	6-oxolithocholate;dehydrolithocholate;3-dehydrodeoxycholate;12-ketolithocholate	0.0016098832336207426
+26	Firmicutes_SGB63246;Muribaculaceae_SGB2126	N-acetylglycine;malonate;3-hydroxy-3-methylglutarate	0.001626248870954564
+27	Muribaculaceae_SGB48227;Muribaculum_gordoncarteri_SGB2087	N2-acetyl,N6-methyllysine;N2-acetyl,N6,N6-dimethyllysine;N-acetyl-cadaverine;N-acetylputrescine;2-hydroxydecanoate	0.001627764149940686
+28	Firmicutes_SGB63246;Muribaculaceae_SGB2126	1-methyl-5-imidazoleacetate;glycitein;genistein;secoisolariciresinol;chrysoeriol;apigenin;naringenin	0.001674965535034786
+29	Limosilactobacillus_reuteri_SGB7095	N2-acetyl,N6-methyllysine;N2-acetyl,N6,N6-dimethyllysine;N-acetyl-cadaverine;N-acetylputrescine;2-hydroxydecanoate;3-aminoisobutyrate;N6-methyllysine;N,N-dimethylalanine;N-methylproline	0.0017322242243810809
+30	Muribaculum_gordoncarteri_SGB2087	tryptophylglycine;phosphate;3-methylbutanol sulfate	0.001775282096420812
+31	Muribaculaceae_SGB48227;Muribaculum_gordoncarteri_SGB2087	2-hydroxybutyrate/2-hydroxyisobutyrate;2-hydroxy-3-methylvalerate;alpha-hydroxyisovalerate;alpha-hydroxyisocaproate;2-hydroxy-4-(methylthio)butanoic acid;tryptophan;phenyllactate (PLA);3-(4-hydroxyphenyl)lactate (HPLA);indolelactate	0.001775282096420812
+32	Erysipelotrichaceae_SGB105325	dipicolinate;6-oxolithocholate;dehydrolithocholate;3-dehydrodeoxycholate;12-ketolithocholate	0.001775282096420812
+33	Muribaculum_gordoncarteri_SGB2087	kynurenine;2,6-dihydroxybenzoic acid;gentisate;2-oxindole-3-acetate;methionine sulfone;pyrraline	0.001775282096420812
+34	Firmicutes_SGB63246;Muribaculaceae_SGB2126	2,4-dihydroxybutyrate;N-formylmethionine;2R,3R-dihydroxybutyrate	0.0018365104521498143
+35	Collinsella_intestinalis_SGB14741	secoisolariciresinol;chrysoeriol;apigenin;naringenin	0.0018365104521498143
+36	Muribaculaceae_SGB48227;Muribaculum_gordoncarteri_SGB2087	N-acetylarginine;matairesinol;inosine;N,N-dimethyl-pro-pro;diosmetin;dihydrocaffeate sulfate (2);vanillactate;dihydroferulic acid sulfate;dihydroferulate;creatine;indolin-2-one	0.0018365104521498143
+37	Atopobiaceae_unclassified_SGB63087_SGB63087	dihomo-linolenoyl ethanolamide;linolenoyl ethanolamide;arachidonoyl ethanolamide;linoleoyl ethanolamide;palmitoleoyl ethanolamide*;oleoyl ethanolamide;palmitoyl ethanolamide	0.0019217515402936882
+38	Erysipelotrichaceae_SGB105325	linolenoyl-linolenoyl-glycerol (18:3/18:3) [2]*;linoleoyl-linolenoyl-glycerol (18:2/18:3) [2]*;palmitoyl-linolenoyl-glycerol (16:0/18:3) [2]*;oleoyl-linolenoyl-glycerol (18:1/18:3) [2]*	0.0019575955285605915
+39	Muribaculum_gordoncarteri_SGB2087	1-palmitoleoyl-GPC* (16:1)*;1-linoleoyl-GPE (18:2)*;1-linoleoyl-GPC (18:2);1-palmitoyl-GPC (16:0);1-oleoyl-GPC (18:1)	0.0021276639252353685
+40	Collinsella_intestinalis_SGB14741	N-acetylarginine	0.0022806431771420525
+41	Collinsella_intestinalis_SGB14741	stearoylcarnitine (C18);palmitoylcarnitine (C16);oleoylcarnitine (C18:1)	0.0022867766410496196
+42	Lactobacillus_acidophilus_SGB7044;Limosilactobacillus_reuteri_SGB7095	6-oxopiperidine-2-carboxylate;methylmalonate (MMA);N-acetylserine;2-pyrrolidinone;4-acetamidobutanoate;N-acetylcitrulline;13-HODE + 9-HODE	0.0023024598037802457
+43	Collinsella_SGB14744_SGB14744	malate;2-methylcitrate/homocitrate;gamma-glutamyl-alpha-lysine;N-acetylglutamate;N-acetylhistidine	0.002490550167462251
+44	Lachnospiraceae_SGB106016;Lachnospiraceae_SGB65958;Lachnospiraceae_SGB4591;Blautia_SGB47659_SGB47659;Lachnospiraceae_SGB66068;Lachnospiraceae_SGB4859;Blautia_SGB47660_SGB47660;Lachnospiraceae_SGB4870;Lachnospiraceae_SGB66069;Lachnospiraceae_SGB58537	deoxycholate	0.002548402385514562
+45	Lactobacillus_acidophilus_SGB7044;Limosilactobacillus_reuteri_SGB7095	N-methylalanine	0.002810361367685468
+46	Muribaculaceae_SGB48227	valylglycine	0.002810361367685468
+47	Collinsella_intestinalis_SGB14741	2,6-dihydroxybenzoic acid;gentisate;2-oxindole-3-acetate;methionine sulfone;pyrraline	0.002810361367685468
+48	Collinsella_intestinalis_SGB14741	3'-dephospho-acetyl-CoA;glycerol 3-phosphate;nicotinic acid mononucleotide (NaMN);AMP;UMP;CMP	0.0028548790884753614
+49	Collinsella_intestinalis_SGB14741	N2-acetyl,N6-methyllysine;N2-acetyl,N6,N6-dimethyllysine;N-acetyl-cadaverine;N-acetylputrescine;2-hydroxydecanoate;3-aminoisobutyrate;N6-methyllysine;N,N-dimethylalanine;N-methylproline	0.0029101946743383734
+50	Collinsella_intestinalis_SGB14741	2-hydroxysebacate;1-methylhypoxanthine	0.0029204327365340106
+51	Firmicutes_SGB63246;Muribaculaceae_SGB2126;Firmicutes_SGB72905;Hydrogenoanaerobacterium_SGB53821_SGB53821	cysteinylglycine	0.002926280325675944
+52	Firmicutes_SGB63246	secoisolariciresinol diglucoside	0.0029946499337707177
+53	Erysipelotrichaceae_SGB105325	N2-acetyllysine	0.0030589280949339876
+54	Muribaculaceae_SGB48227;Muribaculum_gordoncarteri_SGB2087	glycerophosphorylcholine (GPC)	0.0030589280949339876
+55	Firmicutes_SGB63246;Muribaculaceae_SGB2126	agmatine;N-acetylphenylalanine;N-acetylleucine;2-hydroxybutyrate/2-hydroxyisobutyrate;2-hydroxy-3-methylvalerate;alpha-hydroxyisovalerate;alpha-hydroxyisocaproate;2-hydroxy-4-(methylthio)butanoic acid;tryptophan;phenyllactate (PLA);3-(4-hydroxyphenyl)lactate (HPLA);indolelactate	0.0030589280949339876
+56	Prevotella_copri_clade_A_SGB1626	alpha-CEHC taurine*;azelaoyltaurine;gamma-CEHC taurine*;taurine;butyrylputrescine/isobutyrylputrescine	0.0031107354070667604
+57	Muribaculaceae_SGB2126	2'-deoxyadenosine 5'-monophosphate;dCMP;TMP	0.00323994136682713
+58	Megasphaera_elsdenii_SGB5862;Firmicutes_unclassified_SGB14909	harmane	0.00323994136682713
+59	Collinsella_intestinalis_SGB14741	tridecenedioate (C13:1-DC)*	0.00323994136682713
+60	Collinsella_intestinalis_SGB14741;Collinsella_SGB14744_SGB14744;Slackia_SGB14781_SGB14781;Slackia_faecicanis_SGB33547	1-carboxyethylisoleucine;stachydrine	0.0033054814967534434
+61	Firmicutes_SGB63246;Muribaculaceae_SGB2126;Firmicutes_SGB72905;Hydrogenoanaerobacterium_SGB53821_SGB53821	2'-deoxyinosine;2'-deoxyuridine;2'-deoxyguanosine;thymidine	0.0033250048729809847
+62	Muribaculaceae_SGB48227;Muribaculum_gordoncarteri_SGB2087	linoleoyl-linolenoyl-glycerol (18:2/18:3) [1]*;linolenoyl-linolenoyl-glycerol (18:3/18:3) [1]*;oleoyl-linoleoyl-glycerol (18:1/18:2) [1];palmitoyl-linoleoyl-glycerol (16:0/18:2) [1]*;linoleoyl-linoleoyl-glycerol (18:2/18:2) [1]*	0.003363872861401321
+63	Firmicutes_SGB63246;Muribaculaceae_SGB2126	valylglutamine;glycylisoleucine;glycylleucine;glycylvaline;phenylalanine;alanine;methionine;isoleucine;leucine;valine	0.003382095940434773
+64	Prevotellaceae_SGB1481;Prevotella_copri_clade_A_SGB1626;Prevotellaceae_SGB1482;Parasutterella_SGB9260_SGB9260	6-oxolithocholate	0.0034039153095866167
+65	Slackia_SGB14781_SGB14781;Slackia_faecicanis_SGB33547	malate;2-methylcitrate/homocitrate	0.0034871834506198457
+66	Muribaculum_gordoncarteri_SGB2087	N-acetylmuramate;3-ketosphinganine;N-acetylglutamine;N-acetylalanine;butyrylglutamine/isobutyrylglutamine	0.0034871834506198457
+67	Firmicutes_SGB63246;Muribaculaceae_SGB2126	phosphocholine	0.0035099762992130226
+68	Ligilactobacillus_ruminis_SGB7061	12,13-DiHOME;2-aminoadipate;3-(3-hydroxyphenyl)propionate	0.0035099762992130226
+69	Muribaculaceae_SGB48227;Muribaculum_gordoncarteri_SGB2087	hypotaurine	0.0036616909854521353
+70	Erysipelotrichaceae_SGB105325;Coriobacteriaceae_bacterium_SGB33579	butyrate/isobutyrate (4:0)	0.003677778718330223
+71	Slackia_SGB14778_SGB14778	ornithine	0.00369207615763564
+72	Muribaculaceae_SGB48227	N-methylalanine;N-acetyl-3-methylhistidine*;nicotinamide;4-hydroxybenzoate	0.003821177853432397
+73	Slackia_faecicanis_SGB33547	leucylalanine;N-acetyl-1-methylhistidine*;diacetylspermidine*;deoxycholic acid 12-sulfate*;N-palmitoyl-phytosphingosine (t18:0/16:0);4-cholesten-3-one	0.003821177853432397
+74	Muribaculaceae_SGB48227;Muribaculum_gordoncarteri_SGB2087	N6-methyllysine;N,N-dimethylalanine;N-methylproline	0.003821177853432397
+75	Megasphaera_elsdenii_SGB5862;Firmicutes_unclassified_SGB14909	heptanoate (7:0);valerate (5:0);caproate (6:0);12,13-DiHOME;2-aminoadipate;3-(3-hydroxyphenyl)propionate	0.00396011526041791
+76	Collinsella_intestinalis_SGB14741	1-carboxyethylleucine;syringic acid	0.004112599432097527
+77	Coriobacteriaceae_SGB66221	anthranilate;2-hydroxysebacate;1-methylhypoxanthine	0.004137829009872392
+78	Muribaculaceae_SGB48227	isovalerate (C5);spermidine;(N(1) + N(8))-acetylspermidine	0.004192173347193295
+79	Erysipelotrichaceae_SGB105325	1-palmitoyl-2-oleoyl-GPC (16:0/18:1);1-stearoyl-2-oleoyl-GPC (18:0/18:1);1-palmitoyl-2-linoleoyl-GPE (16:0/18:2);1-oleoyl-2-linoleoyl-GPE (18:1/18:2)*;1-linoleoyl-2-linolenoyl-GPC (18:2/18:3)*;1,2-dilinoleoyl-GPE (18:2/18:2)*;1-palmitoyl-2-linoleoyl-GPC (16:0/18:2);1-oleoyl-2-linoleoyl-GPC (18:1/18:2)*;1,2-dilinoleoyl-GPC (18:2/18:2)	0.004192173347193295
+80	Slackia_SGB14781_SGB14781;Slackia_faecicanis_SGB33547	sphingomyelin (d17:1/16:0, d18:1/15:0, d16:1/17:0)*	0.004192173347193295
+81	Oscillospiraceae_SGB15313	ornithine	0.004267558150202435
+82	Firmicutes_SGB63246;Muribaculaceae_SGB2126	4-cholesten-3-one	0.004417418969288881
+83	Muribaculaceae_SGB48227	valylleucine;leucylglutamine*	0.0044792507896069126
+84	Muribaculaceae_SGB48227;Muribaculum_gordoncarteri_SGB2087	NAD+	0.004751196400274917
+85	Coriobacteriaceae_SGB66221	oleoyl-arachidonoyl-glycerol (18:1/20:4) [2]*;linoleoyl-arachidonoyl-glycerol (18:2/20:4) [2]*	0.0051320820713497625
+86	Collinsella_intestinalis_SGB14741	stearoyl sphingomyelin (d18:1/18:0);sphingomyelin (d18:1/17:0, d17:1/18:0, d19:1/16:0);palmitoyl sphingomyelin (d18:1/16:0);sphingomyelin (d18:1/24:1, d18:2/24:0)*;palmitoyl dihydrosphingomyelin (d18:0/16:0)*;hydroxypalmitoyl sphingomyelin (d18:1/16:0(OH))	0.0051320820713497625
+87	Erysipelotrichaceae_SGB105325	hexadecadienoate (16:2n6)	0.0051320820713497625
+88	Limosilactobacillus_reuteri_SGB7095	alpha-CEHC taurine*;azelaoyltaurine;gamma-CEHC taurine*;taurine;butyrylputrescine/isobutyrylputrescine	0.00516542154436312
+89	Prevotella_copri_clade_A_SGB1626	4-methylhexanoate (a7:0);isohyodeoxycholate;isovalerate (C5);spermidine;(N(1) + N(8))-acetylspermidine	0.00516542154436312
+90	Muribaculaceae_SGB48227;Muribaculum_gordoncarteri_SGB2087	malate;2-methylcitrate/homocitrate	0.005183994885646758
+91	Prevotella_copri_clade_A_SGB1626	N2-acetyl,N6-methyllysine;N2-acetyl,N6,N6-dimethyllysine;N-acetyl-cadaverine;N-acetylputrescine;2-hydroxydecanoate	0.005183994885646758
+92	Collinsella_intestinalis_SGB14741	daidzein;enterodiol;equol	0.005220205784149911
+93	Firmicutes_SGB63246;Muribaculaceae_SGB2126	1-carboxyethylvaline	0.005782713182906434
+94	Muribaculaceae_SGB48227;Muribaculum_gordoncarteri_SGB2087	N-acetylglycine;malonate;3-hydroxy-3-methylglutarate	0.005789504017185895
+95	Firmicutes_SGB63246;Muribaculaceae_SGB2126	glycerophosphoglycerol;alpha-ketoglutaramate*;methylphosphate	0.005836265516548822
+96	Muribaculaceae_SGB48227;Muribaculum_gordoncarteri_SGB2087	diacylglycerol (16:1/18:2 [2], 16:0/18:3 [1])*;linoleoyl-linoleoyl-glycerol (18:2/18:2) [2]*;palmitoyl-linoleoyl-glycerol (16:0/18:2) [2]*;oleoyl-linoleoyl-glycerol (18:1/18:2) [2]	0.005872178496143367
+97	Muribaculaceae_SGB48227;Muribaculum_gordoncarteri_SGB2087	8-hydroxyguanine	0.005938158644807885
+98	Firmicutes_SGB63246;Muribaculaceae_SGB2126;Firmicutes_SGB72905;Hydrogenoanaerobacterium_SGB53821_SGB53821	2-piperidinone	0.005947669512036637
+99	Prevotella_copri_clade_A_SGB1626	2'-deoxyinosine;2'-deoxyuridine;2'-deoxyguanosine;thymidine	0.006530675900654458
+100	Collinsella_intestinalis_SGB14741	arachidonoyl ethanolamide;linoleoyl ethanolamide;palmitoleoyl ethanolamide*;oleoyl ethanolamide;palmitoyl ethanolamide	0.00668315015273716
+101	Atopobiaceae_unclassified_SGB63087_SGB63087	daidzein;enterodiol;equol	0.006747960518398174
+102	Prevotella_copri_clade_A_SGB1626	glycerol 3-phosphate;nicotinic acid mononucleotide (NaMN);AMP;UMP;CMP	0.006810257858988474
+103	Limosilactobacillus_reuteri_SGB7095	leucylalanine;N-acetyl-1-methylhistidine*;diacetylspermidine*;deoxycholic acid 12-sulfate*;N-palmitoyl-phytosphingosine (t18:0/16:0);4-cholesten-3-one	0.006820003673889985
+104	Erysipelotrichaceae_SGB105325	3-dehydroshikimate	0.006830647789637511
+105	Firmicutes_unclassified_SGB14909	nicotinate ribonucleoside;pantetheine;guanosine;adenosine;uridine	0.006870349909187664
+106	Muribaculum_gordoncarteri_SGB2087	alpha-CEHC taurine*;azelaoyltaurine;gamma-CEHC taurine*;taurine;butyrylputrescine/isobutyrylputrescine	0.006870349909187664
+107	Muribaculum_gordoncarteri_SGB2087	1-carboxyethylisoleucine	0.006870828282144155
+108	Muribaculaceae_SGB48227	5-hydroxymethylcytosine;N,N-dimethyl-5-aminovalerate;enterolactone	0.006889385558855676
+109	Muribaculaceae_SGB2126	erythritol;N-carbamoylputrescine;vanillate;N,N,N-trimethyl-alanylproline betaine (TMAP);creatinine	0.007100650078228743
+110	Muribaculum_gordoncarteri_SGB2087	N-acetylmethionine;thioproline	0.00713366033903715
+111	Prevotella_copri_clade_A_SGB1626	arginine	0.007152195391528373
+112	Lactobacillus_acidophilus_SGB7044	N-methylglutamate;3-hydroxyhexanoate	0.007183766347598162
+113	Firmicutes_SGB63246;Muribaculaceae_SGB2126	glycerol 3-phosphate;nicotinic acid mononucleotide (NaMN);AMP;UMP;CMP	0.007183766347598162
+114	Firmicutes_SGB63246	indolin-2-one	0.007183766347598162
+115	Prevotella_copri_clade_A_SGB1626	heptanoate (7:0);valerate (5:0);caproate (6:0)	0.007183766347598162
+116	Erysipelotrichaceae_SGB65947;Erysipelotrichaceae_SGB72140	N2-acetyllysine	0.00719288059817201
+117	Firmicutes_unclassified_SGB14909	gamma-tocotrienol;delta-tocopherol;gamma-tocopherol/beta-tocopherol;alpha-tocopherol;alpha-tocotrienol	0.00719288059817201
+118	Muribaculum_gordoncarteri_SGB2087	biotin;sinapate	0.00719288059817201
+119	Muribaculaceae_SGB48227	pantothenate (Vitamin B5)	0.00719288059817201
+120	Erysipelotrichaceae_SGB105325	N-acetylarginine	0.00719288059817201
+121	Prevotella_copri_clade_A_SGB1626	genistein;secoisolariciresinol;chrysoeriol;apigenin;naringenin	0.007215474250837884
+122	Muribaculaceae_SGB2126	indolin-2-one	0.007243183489729995
+123	Collinsella_intestinalis_SGB14741	valylleucine;leucylglutamine*	0.007243183489729995
+124	Muribaculaceae_SGB48227;Muribaculum_gordoncarteri_SGB2087	delta-tocopherol	0.007274835506872795
+125	Muribaculaceae_SGB48227	5-methyluridine (ribothymidine);2'-deoxyinosine;2'-deoxyuridine;2'-deoxyguanosine;thymidine;nicotinate ribonucleoside;pantetheine;guanosine;adenosine;uridine	0.007381206260222195
+126	Prevotella_copri_clade_A_SGB1626	N-palmitoyl-phytosphingosine (t18:0/16:0);4-cholesten-3-one	0.007381206260222195
+127	Erysipelotrichaceae_SGB105325	leucylalanine;N-acetyl-1-methylhistidine*;diacetylspermidine*;deoxycholic acid 12-sulfate*;N-palmitoyl-phytosphingosine (t18:0/16:0);4-cholesten-3-one	0.007381206260222195
+128	Clostridiaceae_bacterium_SGB4721	N-acetylneuraminate;N-glycolylneuraminate	0.007381206260222195
+129	Slackia_faecicanis_SGB33547	stearoylcarnitine (C18)	0.007574012383584794
+130	Firmicutes_unclassified_SGB14909	guanine	0.007782607290865086
+131	Butyricicoccus_SGB14985_SGB14985_group;Firmicutes_SGB63246;Muribaculaceae_SGB2126;Firmicutes_SGB72905;Hydrogenoanaerobacterium_SGB53821_SGB53821	tyrosine	0.007883573890143582
+132	Dubosiella_newyorkensis_SGB6789	glycerophosphorylcholine (GPC);glycerophosphoethanolamine	0.007992272893530784
+133	Firmicutes_unclassified_SGB14909	phenylpyruvate	0.008015734050072854
+134	Muribaculaceae_SGB48227	luteolin sulfate;2-methoxyhydroquinone sulfate (1);2-methoxyhydroquinone sulfate (2)	0.008015734050072854
+135	Slackia_SGB14778_SGB14778;Collinsella_sp_BA40_SGB86217;Collinsella_intestinalis_SGB14741;Collinsella_SGB14744_SGB14744;Slackia_SGB14781_SGB14781;Slackia_faecicanis_SGB33547	phenylacetylalanine	0.008015734050072854
+136	Erysipelotrichaceae_SGB105325	tridecenedioate (C13:1-DC)*	0.008015734050072854
+137	Slackia_faecicanis_SGB33547	dehydrolithocholate	0.008215540463541681
+138	Collinsella_intestinalis_SGB14741	N2-acetyllysine	0.008254551149305678
+139	Erysipelotrichaceae_SGB105325	anthranilate;2-hydroxysebacate;1-methylhypoxanthine	0.008254551149305678
+140	Muribaculaceae_SGB48227;Muribaculum_gordoncarteri_SGB2087	3-dehydrocholate	0.008254551149305678
+141	Erysipelotrichaceae_SGB105325	dCMP;TMP	0.008254551149305678
+142	Firmicutes_SGB63246;Muribaculaceae_SGB2126	arginine;guanine	0.008254551149305678
+143	Slackia_faecicanis_SGB33547	erythritol;N-carbamoylputrescine;vanillate;N,N,N-trimethyl-alanylproline betaine (TMAP);creatinine	0.008254551149305678
+144	Limosilactobacillus_reuteri_SGB7095	genistein;secoisolariciresinol;chrysoeriol;apigenin;naringenin	0.008254551149305678
+145	Firmicutes_SGB63246;Muribaculaceae_SGB2126	isovalerate (C5);spermidine;(N(1) + N(8))-acetylspermidine	0.008254551149305678
+146	Firmicutes_SGB63246	succinate	0.008254551149305678
+147	Collinsella_intestinalis_SGB14741	1-carboxyethyltyrosine;1-carboxyethylvaline	0.008254551149305678
+148	Muribaculaceae_SGB48227;Muribaculum_gordoncarteri_SGB2087	cinnamate	0.008254551149305678
+149	Muribaculaceae_SGB48227	3-dehydroshikimate	0.008254551149305678
+150	Muribaculaceae_SGB2126	3-dehydroshikimate	0.008693505900700704
+151	Collinsella_sp_BA40_SGB86217	diaminopimelate	0.008824483702112884
+152	Firmicutes_SGB63246;Muribaculaceae_SGB2126	alpha-CEHC taurine*;azelaoyltaurine;gamma-CEHC taurine*	0.008856170439698283
+153	Muribaculum_gordoncarteri_SGB2087	glucose;maltotetraose	0.008924261402087545
+154	Muribaculaceae_SGB48227	heptanoate (7:0);valerate (5:0);caproate (6:0)	0.009188347467652994
+155	Limosilactobacillus_reuteri_SGB7095	6-oxolithocholate	0.009188347467652994
+156	Slackia_faecicanis_SGB33547	palmitoylcarnitine (C16);oleoylcarnitine (C18:1)	0.009275509734412407
+157	Adlercreutzia_equolifaciens_SGB14797	linoleoyl-arachidonoyl-glycerol (18:2/20:4) [2]*	0.009492349382372808
+158	Collinsella_intestinalis_SGB14741	stearoylcholine*;choline	0.009510864208590437
+159	Prevotella_copri_clade_A_SGB1626	valylglutamine	0.009566295946051948
+160	Collinsella_SGB14744_SGB14744	palmitoylcarnitine (C16);oleoylcarnitine (C18:1)	0.009595419613583863
+161	Prevotella_copri_clade_A_SGB1626	phenylalanine	0.009595419613583863
+162	Streptococcus_alactolyticus_SGB8017	caprylate (8:0);caprate (10:0)	0.009595419613583863
+163	Firmicutes_unclassified_SGB14909	glycerate	0.009656627461581734
+164	Firmicutes_SGB63246	cytidine;2'-deoxycytidine	0.009681881625483018
+165	Firmicutes_unclassified_SGB14909	2'-deoxyguanosine;thymidine	0.009681881625483018
+166	Muribaculaceae_SGB48227	3-methylbutanol sulfate	0.009681881625483018
+167	Muribaculum_gordoncarteri_SGB2087	1-carboxyethylphenylalanine;o-Tyrosine	0.009681881625483018
+168	Streptococcus_alactolyticus_SGB8017	diacylglycerol (16:1/18:2 [2], 16:0/18:3 [1])*	0.009686977755012096
+169	Firmicutes_unclassified_SGB14909	isohyodeoxycholate	0.009744649522845617
+170	Collinsella_SGB14744_SGB14744	6-hydroxynicotinate	0.010044077784811327
+171	Oscillospiraceae_SGB15313	xylose	0.010178870389193177
+172	Collinsella_intestinalis_SGB14741	delta-tocopherol	0.010178870389193177
+173	Collinsella_intestinalis_SGB14741	3-hydroxytridecanoate	0.010197931249130696
+174	Collinsella_intestinalis_SGB14741	3-methylbutanol sulfate	0.010197931249130696
+175	Muribaculum_gordoncarteri_SGB2087	valylleucine;leucylglutamine*	0.010197931249130696
+176	Slackia_SGB14781_SGB14781;Slackia_faecicanis_SGB33547	stearoyl sphingomyelin (d18:1/18:0)	0.010197931249130696
+177	Firmicutes_unclassified_SGB14909	2-piperidinone	0.010202652707316998
+178	Muribaculaceae_SGB48227	alanyl-glutamyl-meso-diaminopimelate;phenylpyruvate;alpha-CEHC sulfate;alpha-CEHC	0.010238025370897554
+179	Firmicutes_SGB63246	4-hydroxyphenylacetylglycine	0.010238025370897554
+180	Prevotella_copri_clade_A_SGB1626	2-hydroxybutyrate/2-hydroxyisobutyrate	0.010238025370897554
+181	Collinsella_intestinalis_SGB14741	linoleoyl-linoleoyl-glycerol (18:2/18:2) [2]*;palmitoyl-linoleoyl-glycerol (16:0/18:2) [2]*;oleoyl-linoleoyl-glycerol (18:1/18:2) [2]	0.010478187880375738
+182	Prevotella_copri_clade_A_SGB1626	delta-tocopherol;gamma-tocopherol/beta-tocopherol	0.010563551342727065
+183	Muribaculum_gordoncarteri_SGB2087	stearoylcarnitine (C18);palmitoylcarnitine (C16);oleoylcarnitine (C18:1)	0.010885309018237786
+184	Firmicutes_SGB63246	glycine;serine;threonine;glutamine	0.010926701252069935
+185	Prevotella_copri_clade_A_SGB1626	N-acetyltaurine	0.010926701252069935
+186	Erysipelotrichaceae_SGB105325	I-urobilinogen	0.010926701252069935
+187	Muribaculaceae_SGB48227	hexadecadienoate (16:2n6);glycerol	0.010926701252069935
+188	Firmicutes_unclassified_SGB14909	pipecolate	0.011000077313949004
+189	Muribaculaceae_SGB48227;Muribaculum_gordoncarteri_SGB2087	2,4-dihydroxybutyrate;N-formylmethionine;2R,3R-dihydroxybutyrate	0.011017847486403559
+190	Muribaculaceae_SGB48227	I-urobilinogen;D-urobilin	0.011017847486403559
+191	Prevotella_copri_clade_A_SGB1626	leucylalanine;N-acetyl-1-methylhistidine*;diacetylspermidine*;deoxycholic acid 12-sulfate*	0.01106561693866118
+192	Prevotella_copri_clade_A_SGB1626	N6-methyllysine;N,N-dimethylalanine;N-methylproline	0.011152980683065297
+193	Erysipelotrichaceae_SGB105325	thiamin monophosphate	0.011307135148643139
+194	Slackia_faecicanis_SGB33547	N-acetylputrescine;2-hydroxydecanoate	0.011307135148643139
+195	Adlercreutzia_equolifaciens_SGB14797	dehydrophytosphingosine*	0.011307135148643139
+196	Muribaculum_gordoncarteri_SGB2087	valylglycine	0.011307135148643139
+197	Blautia_wexlerae_SGB4837;Peptacetobacter_hiranonis_SGB6131;Turicibacter_bilis_SGB6847;Holdemanella_porci_SGB6796	eicosenoylcarnitine (C20:1)*	0.011324393468629557
+198	Collinsella_intestinalis_SGB14741	heptadecatrienoate (17:3)*	0.011333821322734
+199	Firmicutes_unclassified_SGB14909	N,N-dimethyl-5-aminovalerate	0.011344757227623226
+200	Muribaculaceae_SGB48227;Muribaculum_gordoncarteri_SGB2087	3-hydroxytridecanoate	0.011344757227623226
+201	Collinsella_intestinalis_SGB14741	tryptophylglycine	0.011450660760244352
+202	Firmicutes_SGB63246;Muribaculaceae_SGB2126	maleate	0.01148300869842634
+203	Muribaculum_gordoncarteri_SGB2087	tyramine;N-propionylmethionine	0.01148300869842634
+204	Lactobacillus_acidophilus_SGB7044;Limosilactobacillus_reuteri_SGB7095	nicotinamide	0.011556316828725054
+205	Megasphaera_elsdenii_SGB5862	4-hydroxybenzoate	0.011579659563242223
+206	Muribaculaceae_SGB2126	N-acetyl-1-methylhistidine*	0.01158107508094596
+207	Collinsella_intestinalis_SGB14741	gamma-glutamylmethionine;cytosine	0.011590709926926651
+208	Streptococcus_alactolyticus_SGB8017	N-acetyltaurine;hexanoyltaurine	0.012004597165359565
+209	Erysipelotrichaceae_SGB105325	vanillate;N,N,N-trimethyl-alanylproline betaine (TMAP);creatinine	0.012202597418970871
+210	Firmicutes_SGB63246;Muribaculaceae_SGB2126;Firmicutes_SGB72905;Hydrogenoanaerobacterium_SGB53821_SGB53821	I-urobilinogen	0.012292651773725027
+211	Muribaculum_gordoncarteri_SGB2087	linolenoyl ethanolamide;arachidonoyl ethanolamide;linoleoyl ethanolamide;palmitoleoyl ethanolamide*;oleoyl ethanolamide;palmitoyl ethanolamide	0.012449326078628573
+212	Hydrogenoanaerobacterium_SGB53821_SGB53821	valylglutamine;glycylisoleucine;glycylleucine;glycylvaline;phenylalanine;alanine;methionine;isoleucine;leucine;valine	0.012594523556188182
+213	Prevotella_copri_clade_A_SGB1626	glycylisoleucine;glycylleucine;glycylvaline	0.012860309620767455
+214	Slackia_SGB14781_SGB14781	2-hydroxydecanoate	0.012860309620767455
+215	Firmicutes_SGB63246;Muribaculaceae_SGB2126	N2-acetyl,N6-methyllysine;N2-acetyl,N6,N6-dimethyllysine	0.012860309620767455
+216	Slackia_faecicanis_SGB33547	anserine;salicylate;2,4,6-trihydroxybenzoate;tyrosol;2-aminophenol	0.012860309620767455
+217	Dubosiella_newyorkensis_SGB6789	8-hydroxyguanine	0.012860309620767455
+218	Collinsella_intestinalis_SGB14741	sphingomyelin (d17:1/16:0, d18:1/15:0, d16:1/17:0)*	0.012860309620767455
+219	Clostridiaceae_bacterium_SGB4721	cysteinylglycine	0.012987715416953607
+220	Bifidobacterium_pullorum_SGB17264	cadaverine;putrescine	0.013031754254320831
+221	Bifidobacterium_criceti_SGB17283;Bifidobacterium_pseudolongum_SGB17279	N-acetylglutamine	0.013156346013805753
+222	Muribaculaceae_SGB48227	cyclo(pro-sulfo-tyr)*	0.013156346013805753
+223	Collinsella_intestinalis_SGB14741	leucylglycine;phenylalanylglycine	0.013156346013805753
+224	Slackia_SGB14781_SGB14781;Slackia_faecicanis_SGB33547	hexadecadienoate (16:2n6)	0.01328579601985444
+225	Muribaculaceae_SGB48227	ribonate;lyxonate	0.013374395248744356
+226	Firmicutes_SGB63246;Muribaculaceae_SGB2126	asparagine;riboflavin (Vitamin B2)	0.013422536597094076
+227	Muribaculum_gordoncarteri_SGB2087	sphingomyelin (d17:1/16:0, d18:1/15:0, d16:1/17:0)*	0.013422536597094076
+228	Slackia_faecicanis_SGB33547	AMP;UMP;CMP	0.013480326846120388
+229	Dubosiella_newyorkensis_SGB6789	N-palmitoyl-phytosphingosine (t18:0/16:0)	0.013480326846120388
+230	Erysipelotrichaceae_SGB105325	1-methyl-5-imidazoleacetate	0.01348991140677671
+231	Lactobacillus_acidophilus_SGB7044;Limosilactobacillus_reuteri_SGB7095	2-hydroxybutyrate/2-hydroxyisobutyrate	0.01348991140677671
+232	Firmicutes_SGB63246;Muribaculaceae_SGB2126	N-methylalanine	0.013599024010090999
+233	Muribaculum_gordoncarteri_SGB2087	2'-deoxyinosine	0.01362411947743667
+234	Firmicutes_SGB72905	TMP	0.01362411947743667
+235	Firmicutes_SGB63246;Muribaculaceae_SGB2126;Firmicutes_SGB72905;Hydrogenoanaerobacterium_SGB53821_SGB53821	uridine	0.013658609580874349
+236	Collinsella_intestinalis_SGB14741	asparagine;riboflavin (Vitamin B2)	0.013726237472306316
+237	Firmicutes_unclassified_SGB14909	2'-deoxyadenosine 5'-monophosphate;dCMP;TMP	0.013726237472306316
+238	Muribaculaceae_SGB2126	diacetylspermidine*	0.013881303062445472
+239	Muribaculaceae_SGB2126	ribonate;lyxonate	0.01416325456741925
+240	Limosilactobacillus_reuteri_SGB7095	5-hydroxymethylcytosine	0.01424004146667241
+241	Coriobacteriaceae_SGB66221	daidzein	0.01424004146667241
+242	Erysipelotrichaceae_SGB105325	caprate (10:0)	0.01424004146667241
+243	Collinsella_SGB14744_SGB14744	pyrraline	0.014286857160626644
+244	Prevotella_copri_clade_A_SGB1626	N,N-dimethyl-5-aminovalerate	0.014902054474040983
+245	Megasphaera_elsdenii_SGB5862	alpha-tocotrienol	0.014928128489819484
+246	Coriobacteriaceae_SGB66221	trimethylamine N-oxide	0.014928128489819484
+247	Slackia_faecicanis_SGB33547	2,6-dihydroxybenzoic acid	0.014988877808614005
+248	Muribaculaceae_SGB48227;Muribaculum_gordoncarteri_SGB2087	thiamin monophosphate	0.014995108328502942
+249	Erysipelotrichaceae_SGB105325	N6-methyllysine	0.014995108328502942
+250	Dubosiella_newyorkensis_SGB6789	dehydrolithocholate	0.014995108328502942
+251	Lachnospiraceae_SGB66068	glycerophosphoinositol*	0.014995108328502942
+252	Muribaculum_gordoncarteri_SGB2087	N-acetyl-3-methylhistidine*	0.015089386835412172
+253	Muribaculaceae_SGB2126	vanillactate;dihydroferulic acid sulfate	0.015144790255092952
+254	Muribaculum_gordoncarteri_SGB2087	trans-urocanate	0.015398126239738833
+255	Muribaculaceae_SGB48227;Muribaculum_gordoncarteri_SGB2087	4-acetamidobutanoate	0.015570233780984103
+256	Coriobacteriaceae_SGB66221	delta-CEHC	0.015627005787780868
+257	Muribaculum_gordoncarteri_SGB2087	anserine;salicylate;2,4,6-trihydroxybenzoate;tyrosol;2-aminophenol	0.0156911824715369
+258	Ligilactobacillus_ruminis_SGB7061	N-methylglutamate	0.01572258107015127
+259	Muribaculaceae_SGB48227	N-palmitoyl-sphingosine (d18:1/16:0);ceramide (d18:2/24:1, d18:1/24:2)*	0.01572258107015127
+260	Atopobiaceae_unclassified_SGB63087_SGB63087	equol sulfate;4-hydroxycinnamate	0.015790112397615182
+261	Firmicutes_unclassified_SGB14909	alpha-CEHC sulfate	0.015803440057362284
+262	Prevotella_copri_clade_A_SGB1626	nicotinate ribonucleoside;pantetheine;guanosine;adenosine;uridine	0.015823541843843263
+263	Erysipelotrichaceae_SGB65947	isovalerylphenylalanine*	0.015916899225980066
+264	Firmicutes_SGB63246;Muribaculaceae_SGB2126	pantothenate (Vitamin B5)	0.015916899225980066
+265	Turicibacter_bilis_SGB6847	N1,N12-diacetylspermine	0.016184171760562856
+266	Firmicutes_unclassified_SGB14909	cysteinylglycine	0.016184171760562856
+267	Collinsella_SGB14744_SGB14744	N-palmitoyl-phytosphingosine (t18:0/16:0)	0.016184171760562856
+268	Hydrogenoanaerobacterium_SGB53821_SGB53821	2-hydroxybutyrate/2-hydroxyisobutyrate;2-hydroxy-3-methylvalerate;alpha-hydroxyisovalerate;alpha-hydroxyisocaproate;2-hydroxy-4-(methylthio)butanoic acid	0.016184171760562856
+269	Muribaculaceae_SGB48227;Muribaculum_gordoncarteri_SGB2087	tridecenedioate (C13:1-DC)*	0.016184171760562856
+270	Prevotella_copri_clade_A_SGB1626	phenylpyruvate	0.016201212255462994
+271	Firmicutes_SGB63246;Muribaculaceae_SGB2126	delta-tocopherol	0.016346272144946793
+272	Slackia_SGB14781_SGB14781;Slackia_faecicanis_SGB33547	hydroxypalmitoyl sphingomyelin (d18:1/16:0(OH))	0.016346272144946793
+273	Limosilactobacillus_reuteri_SGB7095	glycerophosphorylcholine (GPC);glycerophosphoethanolamine	0.016384166823175218
+274	Muribaculaceae_SGB48227	1,2-dilinoleoyl-GPE (18:2/18:2)*	0.016384166823175218
+275	Collinsella_intestinalis_SGB14741	dihydroferulate	0.016478738716181614
+276	Slackia_SGB14781_SGB14781;Slackia_faecicanis_SGB33547	syringic acid	0.016527259808103732
+277	Firmicutes_SGB63246	N-acetylneuraminate	0.016527259808103732
+278	Collinsella_sp_BA40_SGB86217;Collinsella_intestinalis_SGB14741;Collinsella_SGB14744_SGB14744;Slackia_SGB14781_SGB14781;Slackia_faecicanis_SGB33547	tyramine	0.016677994174383814
+279	Collinsella_intestinalis_SGB14741	taurine;butyrylputrescine/isobutyrylputrescine	0.016685723807993616
+280	Clostridiaceae_bacterium_Marseille_Q3526_SGB4703	mead acid (20:3n9)	0.01673857588383564
+281	Ligilactobacillus_ruminis_SGB7061	pipecolate	0.01673857588383564
+282	Prevotella_copri_clade_A_SGB1626	TMP	0.01684727803592005
+283	Collinsella_intestinalis_SGB14741	isoleucylglycine	0.01684727803592005
+284	Peptacetobacter_hiranonis_SGB6131	eicosanoylsphingosine (d20:1)*	0.016902610061432132
+285	Limosilactobacillus_reuteri_SGB7095	agmatine	0.016916977968039364
+286	Muribaculaceae_SGB48227	pyridoxal	0.01697934193989259
+287	Slackia_faecicanis_SGB33547	2-hydroxysebacate	0.017015553346112714
+288	Muribaculaceae_SGB2126	N-acetylarginine	0.017032785434040017
+289	Firmicutes_SGB72905	phosphocholine	0.017072245190467492
+290	Lachnospiraceae_SGB4870	N-acetylthreonine	0.017072269314959528
+291	Firmicutes_SGB63246	1-(1-enyl-stearoyl)-GPE (P-18:0)*;glycerophosphorylcholine (GPC);glycerophosphoethanolamine	0.017129189411688558
+292	Firmicutes_SGB72905;Hydrogenoanaerobacterium_SGB53821_SGB53821	secoisolariciresinol	0.017129189411688558
+293	Slackia_SGB14781_SGB14781	diacetylspermidine*;deoxycholic acid 12-sulfate*	0.01726191895352695
+294	Parasutterella_SGB9260_SGB9260	dehydrolithocholate;3-dehydrodeoxycholate;12-ketolithocholate	0.01726191895352695
+295	Slackia_faecicanis_SGB33547	N6-methyllysine	0.017272453059172296
+296	Firmicutes_SGB63246;Muribaculaceae_SGB2126	alanyl-glutamyl-meso-diaminopimelate	0.017307191994981305
+297	Slackia_faecicanis_SGB33547	3-hydroxytridecanoate	0.017307191994981305
+298	Muribaculum_gordoncarteri_SGB2087	N-palmitoyl-sphingosine (d18:1/16:0);ceramide (d18:2/24:1, d18:1/24:2)*	0.017307191994981305
+299	Ligilactobacillus_ruminis_SGB7061	N,N-dimethyl-5-aminovalerate	0.017485189012996026
+300	Slackia_faecicanis_SGB33547	leucylglycine	0.017485189012996026
+301	Muribaculaceae_SGB48227	1-carboxyethylphenylalanine	0.01755744942454666
+302	Muribaculum_gordoncarteri_SGB2087	phenylalanylalanine	0.01756209096753873
+303	Prevotella_copri_clade_A_SGB1626	isoleucine;leucine;valine	0.017661322870960592
+304	Firmicutes_SGB63246	TMP	0.017684629545034726
+305	Coriobacteriaceae_SGB66221	palmitoleoyl ethanolamide*	0.017690992992522678
+306	Firmicutes_SGB72905	1-ribosyl-imidazoleacetate*	0.01774932589152041
+307	Firmicutes_SGB63246	pheophytin A	0.01778975672876256
+308	Muribaculaceae_SGB48227	cysteine	0.01778975672876256
+309	Muribaculum_gordoncarteri_SGB2087	ribonate;lyxonate	0.01778975672876256
+310	Collinsella_intestinalis_SGB14741	eicosapentaenoate (EPA; 20:5n3)	0.017822853835184154
+311	Firmicutes_unclassified_SGB14909	hydantoin-5-propionate	0.017822853835184154
+312	Firmicutes_SGB63246;Muribaculaceae_SGB2126	N6-methyllysine	0.017822853835184154
+313	Slackia_faecicanis_SGB33547	dipicolinate	0.017822853835184154
+314	Limosilactobacillus_reuteri_SGB7095	dehydrolithocholate	0.017933945631537825
+315	Parasutterella_SGB9260_SGB9260	guanidinoacetate;5,6-DiHETrE	0.017933945631537825
+316	Muribaculaceae_SGB48227;Muribaculum_gordoncarteri_SGB2087	2-hydroxysebacate	0.018063026296472922
+317	Bifidobacterium_pseudolongum_SGB17279	3-dehydrodeoxycholate;12-ketolithocholate	0.018083328112598076
+318	Clostridiaceae_bacterium_SGB4721	1-stearoyl-GPE (18:0)	0.018152799727860564
+319	Collinsella_SGB14744_SGB14744	diacetylspermidine*;deoxycholic acid 12-sulfate*	0.01828059523869271
+320	Collinsella_intestinalis_SGB14741	equol sulfate;4-hydroxycinnamate	0.018408936481938344
+321	Adlercreutzia_equolifaciens_SGB14797	pseudouridine	0.0185488577886697
+322	Collinsella_intestinalis_SGB14741	hexadecanedioate (C16)	0.01863180136022657
+323	Slackia_SGB14781_SGB14781;Slackia_faecicanis_SGB33547	NAD+	0.018886407663760554
+324	Hydrogenoanaerobacterium_SGB53821_SGB53821	isoleucylglycine	0.018905360893963732
+325	Atopobiaceae_unclassified_SGB105119_SGB105119	fucose	0.018967475204497795
+326	Slackia_SGB14781_SGB14781;Slackia_faecicanis_SGB33547	cholesterol	0.019103213647597525
+327	Limosilactobacillus_reuteri_SGB7095	arginine	0.019168224504061332
+328	Muribaculaceae_SGB48227	3-ketosphinganine	0.01916861288165189
+329	Prevotella_copri_clade_A_SGB1626	asparagine	0.01916861288165189
+330	Collinsella_SGB14744_SGB14744	creatinine	0.019224998634442964
+331	Prevotella_copri_clade_A_SGB1626	valylleucine;leucylglutamine*	0.019224998634442964
+332	Parasutterella_SGB9260_SGB9260	AMP;UMP;CMP	0.019376729318319207
+333	Hydrogenoanaerobacterium_SGB53821_SGB53821	3-dehydroshikimate	0.019445358926209258
+334	Collinsella_tanakaei_SGB14737	heptanoate (7:0)	0.019474472585757373
+335	Firmicutes_SGB72905	glutamine_degradant*	0.019474472585757373
+336	Prevotella_copri_clade_A_SGB1626	alpha-hydroxyisovalerate	0.01959373328471965
+337	Erysipelotrichaceae_SGB105325	linoleoyl-linolenoyl-glycerol (18:2/18:3) [1]*	0.01963124952935005
+338	Limosilactobacillus_reuteri_SGB7095	1-methyl-4-imidazoleacetate	0.019645448140908756
+339	Parasutterella_SGB9260_SGB9260	hypotaurine	0.01971933674723134
+340	Limosilactobacillus_reuteri_SGB7095	N-acetylarginine	0.019767303862006303
+341	Dubosiella_newyorkensis_SGB6789	1-carboxyethyltyrosine;1-carboxyethylvaline;isoleucylhydroxyproline*;leucylhydroxyproline*	0.019873434063293026
+342	Firmicutes_unclassified_SGB14909	glycylisoleucine	0.019888635583902196
+343	Fournierella_massiliensis_SGB15280	alpha-tocopherol acetate	0.019968523940870272
+344	Limosilactobacillus_reuteri_SGB7095	malate;2-methylcitrate/homocitrate	0.019968523940870272
+345	Hydrogenoanaerobacterium_SGB53821_SGB53821	TMP	0.019968523940870272
+346	Prevotella_copri_clade_A_SGB1626	dihydroferulic acid sulfate	0.019968523940870272
+347	Firmicutes_SGB63246	myo-inositol;glycerophosphoserine*	0.019968523940870272
+348	Firmicutes_SGB63246	nicotinate ribonucleoside;pantetheine	0.020015884011387385
+349	Firmicutes_SGB63246	dihydroferulate	0.020015884011387385
+350	Hydrogenoanaerobacterium_SGB53821_SGB53821	indolin-2-one	0.020015884011387385
+351	Erysipelotrichaceae_SGB105325	heptadecatrienoate (17:3)*	0.02005207705101035
+352	Prevotella_copri_clade_A_SGB1626	alpha-CEHC sulfate	0.02012877931984437
+353	Slackia_faecicanis_SGB33547	3-dehydrodeoxycholate	0.020265087158104485
+354	Limosilactobacillus_reuteri_SGB7095	cytosine	0.02027328041777446
+355	Firmicutes_SGB72905;Hydrogenoanaerobacterium_SGB53821_SGB53821	1-methyl-5-imidazoleacetate	0.02049726081580186
+356	Erysipelotrichaceae_SGB105325	butyrylputrescine/isobutyrylputrescine	0.02049726081580186
+357	Collinsella_intestinalis_SGB14741	dihomo-linolenoyl ethanolamide	0.02049726081580186
+358	Lactobacillus_johnsonii_SGB7041	behenoylcarnitine (C22)*	0.020737767458055133
+359	Firmicutes_unclassified_SGB14909	dopamine 3-O-sulfate;phenylacetyltaurine	0.020969502450485688
+360	Firmicutes_SGB63246	vanillate	0.02097025885714669
+361	Lactobacillus_johnsonii_SGB7041	N2-acetyl,N6-methyllysine	0.021592481658820856
+362	Limosilactobacillus_reuteri_SGB7095	asparagine	0.02188117583491282
+363	Collinsella_intestinalis_SGB14741	valylglycine	0.02188117583491282
+364	Muribaculum_gordoncarteri_SGB2087	imidazole propionate;2'-O-methyluridine	0.022068796880253153
+365	Dubosiella_newyorkensis_SGB6789	propionylglutamine	0.02213835852810872
+366	Parasutterella_SGB9260_SGB9260	dimethylglycine	0.02222823590919846
+367	Slackia_SGB14781_SGB14781;Slackia_faecicanis_SGB33547	palmitoyl sphingomyelin (d18:1/16:0)	0.02236356006062421
+368	Prevotella_copri_clade_A_SGB1626	1-methyl-4-imidazoleacetate	0.0226247741915225
+369	Blautia_hansenii_SGB4794;Faecalimonas_umbilicata_SGB4583	deoxycholate	0.02266908097708057
+370	Acidaminococcaceae_SGB5750	6-oxolithocholate	0.02266908097708057
+371	Muribaculaceae_SGB48227	gamma-tocopherol/beta-tocopherol	0.022706897100480947
+372	Muribaculaceae_SGB2126	1-carboxyethylphenylalanine	0.022862887727646913
+373	Parasutterella_SGB9260_SGB9260	heptanoate (7:0)	0.02290308720041729
+374	Collinsella_intestinalis_SGB14741	linolenoyl ethanolamide	0.023021979353843522
+375	Muribaculaceae_SGB48227;Muribaculum_gordoncarteri_SGB2087	propionylglutamine	0.023039589165273634
+376	Collinsella_intestinalis_SGB14741	glycerophosphoglycerol	0.023155188050288933
+377	Erysipelotrichaceae_SGB105325;Coriobacteriaceae_bacterium_SGB33579	8-hydroxyguanine	0.02317183668479963
+378	Firmicutes_unclassified_SGB14909	isovalerate (C5)	0.023264492052321586
+379	Lachnospiraceae_SGB4859	glycerophosphoinositol*	0.023264492052321586
+380	Parasutterella_SGB9260_SGB9260	hexadecadienoate (16:2n6)	0.02341019193231143
+381	Erysipelotrichaceae_SGB105325	dihydroferulic acid sulfate	0.02351237992657239
+382	Peptacetobacter_hiranonis_SGB6131	heptadecasphingosine (d17:1)	0.023637409905300243
+383	Prevotellaceae_SGB1481;Prevotella_copri_clade_A_SGB1626	S-methylcysteine	0.023637409905300243
+384	Lactobacillus_acidophilus_SGB7044	N-acetyl-cadaverine	0.023637409905300243
+385	Streptococcus_alactolyticus_SGB8017	oleoyl-linoleoyl-glycerol (18:1/18:2) [2]	0.023637409905300243
+386	Adlercreutzia_equolifaciens_SGB14797	adipate	0.023637409905300243
+387	Muribaculaceae_SGB2126	carboxyethyl-GABA	0.023637409905300243
+388	Firmicutes_SGB72905	indoleacetylglycine	0.023797575919912356
+389	Limosilactobacillus_reuteri_SGB7095	glycerol 3-phosphate;nicotinic acid mononucleotide (NaMN);AMP;UMP;CMP	0.023874210339162615
+390	Slackia_SGB14781_SGB14781	hexadecanedioate (C16)	0.023874210339162615
+391	Slackia_faecicanis_SGB33547	asparagine;riboflavin (Vitamin B2)	0.023937663535173064
+392	Muribaculaceae_SGB2126	N-acetylglucosaminylasparagine	0.023937663535173064
+393	Slackia_faecicanis_SGB33547	dimethylglycine	0.023937663535173064
+394	Dubosiella_newyorkensis_SGB6789	N,N,N-trimethyl-alanylproline betaine (TMAP);creatinine	0.023986865701459723
+395	Slackia_faecicanis_SGB33547	eriodictyol	0.023986865701459723
+396	Allobaculum_stercoricanis_SGB29316	N-acetylmethionine sulfoxide;N-acetylthreonine;S-methylcysteine	0.024106007570023843
+397	Dubosiella_newyorkensis_SGB6789	N-acetyl-1-methylhistidine*	0.024106007570023843
+398	Collinsella_intestinalis_SGB14741	propionylglutamine	0.024106007570023843
+399	Slackia_SGB14778_SGB14778	anthranilate	0.024117152540503145
+400	Firmicutes_SGB63246	phenylacetylglycine	0.024117152540503145
+401	Lachnospiraceae_SGB4870;Lachnospiraceae_SGB66069;Lachnospiraceae_SGB58537	lithocholate	0.02424583730396262
+402	Muribaculaceae_SGB48227	3,4-dihydroxybutyrate	0.02424583730396262
+403	Firmicutes_SGB63246	arabonate/xylonate	0.02424583730396262
+404	Collinsella_intestinalis_SGB14741	TMP	0.024424217096286553
+405	Megasphaera_elsdenii_SGB5862	valerylphenylalanine	0.024471240856000342
+406	Firmicutes_SGB72905;Hydrogenoanaerobacterium_SGB53821_SGB53821	pantothenate (Vitamin B5)	0.024471240856000342
+407	Firmicutes_SGB72905	1-(1-enyl-stearoyl)-GPE (P-18:0)*	0.024603233673952483
+408	Collinsella_SGB14744_SGB14744	gentisate;2-oxindole-3-acetate	0.024663338920764263
+409	Slackia_SGB14778_SGB14778	stachydrine	0.024723548706280588
+410	Slackia_SGB14781_SGB14781;Slackia_faecicanis_SGB33547	arachidoyl ethanolamide (20:0)*	0.024983372544250346
+411	Firmicutes_SGB72905	N-acetylneuraminate	0.02521786583389564
+412	Muribaculum_gordoncarteri_SGB2087	triacetate lactone	0.025269834802924815
+413	Dubosiella_newyorkensis_SGB6789	glycerophosphoglycerol	0.025468458957322113
+414	Slackia_faecicanis_SGB33547	1-carboxyethyltyrosine	0.025499231903769022
+415	Muribaculum_gordoncarteri_SGB2087	hexadecanedioate (C16)	0.025499231903769022
+416	Parasutterella_SGB9260_SGB9260	3-dehydroshikimate	0.025499231903769022
+417	Limosilactobacillus_reuteri_SGB7095	valylglutamine	0.02553595108487279
+418	Hydrogenoanaerobacterium_SGB53821_SGB53821	alanyl-glutamyl-meso-diaminopimelate	0.02553595108487279
+419	Slackia_faecicanis_SGB33547	chrysoeriol	0.02553595108487279
+420	Firmicutes_SGB63246;Muribaculaceae_SGB2126	valylglycine	0.025704559831790524
+421	Collinsella_intestinalis_SGB14741	2-aminophenol	0.025704559831790524
+422	Slackia_SGB14781_SGB14781;Slackia_faecicanis_SGB33547	heptadecatrienoate (17:3)*	0.02587271034261295
+423	Slackia_faecicanis_SGB33547	3-methylbutanol sulfate	0.025908811863932592
+424	Muribaculum_gordoncarteri_SGB2087	carboxyethyl-GABA	0.025908811863932592
+425	Slackia_faecicanis_SGB33547	delta-tocopherol	0.026097474168836645
+426	Erysipelotrichaceae_SGB105325	valerate (5:0)	0.026097474168836645
+427	Firmicutes_unclassified_SGB14909	N-acetylneuraminate	0.026097474168836645
+428	Firmicutes_SGB72905	phenylacetylglycine	0.026097474168836645
+429	Muribaculaceae_SGB48227	N2-acetyllysine	0.02611937577366042
+430	Streptococcus_alactolyticus_SGB8017	linolenoyl-linolenoyl-glycerol (18:3/18:3) [2]*;linoleoyl-linolenoyl-glycerol (18:2/18:3) [2]*;palmitoyl-linolenoyl-glycerol (16:0/18:3) [2]*;oleoyl-linolenoyl-glycerol (18:1/18:3) [2]*	0.02614713354263138
+431	Lactobacillus_acidophilus_SGB7044;Limosilactobacillus_reuteri_SGB7095	5-methylcytosine	0.026255710964252093
+432	Lachnospiraceae_SGB4870	hyodeoxycholate	0.0265829281874969
+433	Adlercreutzia_equolifaciens_SGB14797	hydroxyproline	0.026699001176678772
+434	Collinsella_SGB14744_SGB14744	hydroxy-undecanedioate (OH-C11:0-DC)*	0.026732353630628834
+435	Atopobiaceae_unclassified_SGB63087_SGB63087	octadecenedioate (C18:1-DC)	0.027617868878572382
+436	Hydrogenoanaerobacterium_SGB53821_SGB53821	serine	0.027683361629159294
+437	Collinsella_intestinalis_SGB14741	vanillactate	0.027723903525904484
+438	Collinsella_intestinalis_SGB14741	1,2-dilinoleoyl-GPE (18:2/18:2)*	0.027949310346720026
+439	Dubosiella_newyorkensis_SGB6789	malonate	0.027973912315939858
+440	Erysipelotrichaceae_SGB105325	2-hydroxydecanoate	0.02799802303972659
+441	Prevotella_copri_clade_A_SGB1626	phenylacetyltaurine	0.02799802303972659
+442	Bifidobacterium_criceti_SGB17283	trigonelline (N'-methylnicotinate)	0.028136227027608332
+443	Slackia_faecicanis_SGB33547	3,4-dihydroxybutyrate	0.028200585167105673
+444	Slackia_SGB14781_SGB14781	sphingomyelin (d18:1/17:0, d17:1/18:0, d19:1/16:0)	0.028200585167105673
+445	Muribaculaceae_SGB48227	butyrylglutamine/isobutyrylglutamine	0.028254244764369614
+446	Slackia_SGB14781_SGB14781;Slackia_faecicanis_SGB33547	maltotetraose	0.028254244764369614
+447	Muribaculaceae_SGB2126	dihydroferulate	0.0282601581770013
+448	Parasutterella_SGB9260_SGB9260	isovalerate (C5)	0.0282601581770013
+449	Slackia_faecicanis_SGB33547	6-oxolithocholate	0.0282601581770013
+450	Prevotella_copri_clade_A_SGB1626	hypotaurine	0.028285767943459283
+451	Erysipelotrichaceae_SGB105325	N-acetyltaurine;hexanoyltaurine	0.028285767943459283
+452	Firmicutes_SGB72905	4-hydroxyphenylacetylglycine	0.028285767943459283
+453	Muribaculaceae_SGB48227;Muribaculum_gordoncarteri_SGB2087	linoleoyl-linolenoyl-glycerol (18:2/18:3) [2]*	0.028285767943459283
+454	Muribaculaceae_SGB2126	linoleoyl-linolenoyl-glycerol (18:2/18:3) [1]*	0.028285767943459283
+455	Muribaculaceae_SGB2126	leucylhydroxyproline*	0.028285767943459283
+456	Muribaculum_gordoncarteri_SGB2087	oxindolylalanine;glutarate (C5-DC)	0.028285767943459283
+457	Muribaculaceae_SGB48227;Muribaculum_gordoncarteri_SGB2087	phenylacetylalanine;ethylmalonate;benzoate	0.028285767943459283
+458	Firmicutes_unclassified_SGB14909	N-carboxymethylalanine	0.02840293696705311
+459	Erysipelotrichaceae_SGB44483	lithocholate	0.028574256249352645
+460	Limosilactobacillus_reuteri_SGB7095	dihydroferulic acid sulfate	0.028579338675907073
+461	Slackia_faecicanis_SGB33547	1-carboxyethylleucine	0.028615782178490482
+462	Collinsella_SGB14744_SGB14744	choline	0.028615782178490482
+463	Prevotella_copri_clade_A_SGB1626	hexadecadienoate (16:2n6)	0.028615782178490482
+464	Clostridiaceae_bacterium_SGB4721	glycerate	0.028660247447596786
+465	Muribaculaceae_SGB48227;Muribaculum_gordoncarteri_SGB2087	N-acetylvaline	0.028808602799985737
+466	Firmicutes_unclassified_SGB14909	myristoleate (14:1n5)	0.028808602799985737
+467	UNKNOWN	pseudouridine	0.028838586010506113
+468	Firmicutes_SGB63246;Muribaculaceae_SGB2126	1,2-dilinoleoyl-GPE (18:2/18:2)*	0.028890984097938215
+469	Streptococcus_lutetiensis_SGB8021	guanidinoacetate	0.028890984097938215
+470	Slackia_SGB14781_SGB14781	LAHSA (18:2/OH-18:0)*	0.029397697686572053
+471	Parasutterella_SGB9260_SGB9260	N6-methyllysine	0.029486016734948793
+472	Erysipelotrichaceae_SGB105325	1-carboxyethylleucine;syringic acid	0.029486016734948793
+473	Adlercreutzia_equolifaciens_SGB14797	1-oleoyl-2-linoleoyl-GPC (18:1/18:2)*;1,2-dilinoleoyl-GPC (18:2/18:2)	0.029486016734948793
+474	Collinsella_intestinalis_SGB14741	N-acetylphenylalanine	0.029486016734948793
+475	Collinsella_intestinalis_SGB14741	5-HETE	0.029486016734948793
+476	Erysipelotrichaceae_SGB42251	glycerophosphoinositol*	0.029486016734948793
+477	Prevotellaceae_SGB1481	isovalerate (C5)	0.029866540702892096
+478	Firmicutes_SGB63246	2-hydroxysebacate;1-methylhypoxanthine	0.030013983304780723
+479	Muribaculaceae_SGB2126	cinnamate	0.030019859393024425
+480	Muribaculaceae_SGB48227	S-methylcysteine	0.030065929815763167
+481	Firmicutes_SGB63246	cysteine;cysteine s-sulfate	0.030129936079203553
+482	Prevotella_copri_clade_A_SGB1626	methionine sulfoxide	0.03017755441768586
+483	Firmicutes_SGB63246	alpha-CEHC sulfate;alpha-CEHC	0.030210202830034564
+484	Firmicutes_unclassified_SGB14909	pantothenate (Vitamin B5)	0.030369530887383436
+485	Muribaculaceae_SGB2126	diosmetin	0.030369530887383436
+486	Prevotella_copri_clade_A_SGB1626	2-hydroxy-4-(methylthio)butanoic acid	0.030369530887383436
+487	Atopobiaceae_unclassified_SGB63087_SGB63087	hydroxystearate sulfate	0.030369530887383436
+488	Erysipelotrichaceae_SGB65947	L-urobilin	0.030369530887383436
+489	Firmicutes_unclassified_SGB14909	1-methyl-5-imidazoleacetate	0.03044909346736144
+490	Limosilactobacillus_reuteri_SGB7095	leucylglutamine*	0.03044909346736144
+491	Erysipelotrichaceae_SGB105325;Coriobacteriaceae_bacterium_SGB33579	L-urobilin	0.03044909346736144
+492	Limosilactobacillus_reuteri_SGB7095	3-methylhistidine	0.03073096050560078
+493	Firmicutes_SGB63246	1-carboxyethylphenylalanine;o-Tyrosine	0.030737387098022022
+494	Ligilactobacillus_ruminis_SGB7061	gamma-CEHC taurine*	0.03079627716549695
+495	Lactobacillus_acidophilus_SGB7044	N2-acetyl,N6-methyllysine	0.031064667849547402
+496	Muribaculum_gordoncarteri_SGB2087	thymidine	0.031141636298951936
+497	Megasphaera_elsdenii_SGB5862	cadaverine;putrescine;N-acetylhistamine;histamine;1-methylhistamine	0.03118724100170381
+498	Firmicutes_SGB63246	6-oxolithocholate	0.03118724100170381
+499	Adlercreutzia_equolifaciens_SGB14797	arachidonoyl ethanolamide	0.03118724100170381
+500	Slackia_SGB14781_SGB14781	hexadecatrienoate (16:3n3)	0.03129928297186497
+501	Firmicutes_SGB63246	glycerate;sedoheptulose	0.03129928297186497
+502	Collinsella_intestinalis_SGB14741	diosmetin	0.03129928297186497
+503	Limosilactobacillus_reuteri_SGB7095	NAD+	0.03132229326431274
+504	Parasutterella_SGB9260_SGB9260	TMP	0.031324353008459586
+505	Lactobacillus_acidophilus_SGB7044	N-palmitoyl-sphingosine (d18:1/16:0)	0.031324353008459586
+506	Limosilactobacillus_reuteri_SGB7095	3-ureidopropionate;beta-alanine	0.03152336750317372
+507	Muribaculum_gordoncarteri_SGB2087	pimelate (C7-DC)	0.03152336750317372
+508	Peptacetobacter_hiranonis_SGB6131	nervonoyl ethanolamide (24:1)*	0.031570707149613665
+509	Peptacetobacter_hiranonis_SGB6131	pseudouridine	0.031570707149613665
+510	Collinsella_SGB14744_SGB14744	propionylglutamine	0.031570707149613665
+511	Slackia_SGB14781_SGB14781;Slackia_faecicanis_SGB33547	N-palmitoyl-sphingosine (d18:1/16:0)	0.031570707149613665
+512	Collinsella_intestinalis_SGB14741	1-methyl-5-imidazoleacetate	0.031797921275235286
+513	Firmicutes_SGB72905	D-urobilin	0.03187537075266422
+514	Ligilactobacillus_ruminis_SGB7061	pyruvate	0.03187537075266422
+515	Firmicutes_unclassified_SGB14909	alpha-CEHC taurine*;azelaoyltaurine;gamma-CEHC taurine*;taurine;butyrylputrescine/isobutyrylputrescine	0.03196258159476032
+516	Clostridiaceae_bacterium_SGB4721	indolin-2-one	0.031991582179344995
+517	Dubosiella_newyorkensis_SGB6789	6-oxolithocholate	0.031991582179344995
+518	Prevotella_copri_clade_A_SGB1626	4-acetamidobutanoate	0.032133786478580624
+519	Muribaculum_gordoncarteri_SGB2087	cysteine	0.03220315922547981
+520	Limosilactobacillus_reuteri_SGB7095	indolin-2-one	0.03248147939500807
+521	Coriobacteriaceae_SGB66221	creatine	0.03248147939500807
+522	Slackia_faecicanis_SGB33547	N-methylproline	0.03251757400290657
+523	Atopobiaceae_unclassified_SGB63087_SGB63087	eicosenoylcarnitine (C20:1)*	0.03252108182416561
+524	Muribaculum_gordoncarteri_SGB2087	2-methoxyhydroquinone sulfate (2)	0.03252108182416561
+525	Adlercreutzia_equolifaciens_SGB14797	hydroxystearate sulfate	0.03252108182416561
+526	Prevotella_copri_clade_A_SGB1626	indolin-2-one	0.03262513431259331
+527	Slackia_faecicanis_SGB33547	hydroxy-undecanedioate (OH-C11:0-DC)*	0.03263091472161243
+528	Muribaculaceae_SGB48227	2'-deoxycytidine	0.03273037980979968
+529	Clostridiaceae_bacterium_Marseille_Q3526_SGB4703	N-carboxymethylalanine	0.03277252170036787
+530	Collinsella_intestinalis_SGB14741	threonylphenylalanine	0.03277252170036787
+531	Collinsella_intestinalis_SGB14741	triacetate lactone	0.032937524289838885
+532	Prevotella_copri_clade_A_SGB1626	2-methoxyhydroquinone sulfate (2)	0.03295182690253484
+533	Erysipelotrichaceae_SGB44483	L-urobilin	0.03295182690253484
+534	Muribaculaceae_SGB2126	glutamine_degradant*	0.03305210230682865
+535	Erysipelotrichaceae_SGB105325	3'-dephospho-acetyl-CoA	0.033091843092503785
+536	Firmicutes_SGB63246	vanillactate	0.03318229239635543
+537	Muribaculaceae_SGB48227	cystathionine;cysteinylglycine	0.03324324337592505
+538	Dubosiella_newyorkensis_SGB6789	methionine sulfone	0.03329162245519609
+539	Firmicutes_SGB72905	glycylisoleucine	0.033370472932153304
+540	Prevotella_copri_clade_A_SGB1626	agmatine;N-acetylphenylalanine;N-acetylleucine	0.033370472932153304
+541	Limosilactobacillus_reuteri_SGB7095	2S,3R-dihydroxybutyrate	0.033378115437517134
+542	Hydrogenoanaerobacterium_SGB53821_SGB53821	guanosine	0.03338742339605813
+543	Limosilactobacillus_reuteri_SGB7095	3-phenylpropionate (hydrocinnamate)	0.03338878574848339
+544	Collinsella_SGB14744_SGB14744	equol sulfate	0.03347761673121393
+545	Firmicutes_SGB63246	gamma-tocopherol/beta-tocopherol	0.03347761673121393
+546	Firmicutes_SGB63246	5-methyluridine (ribothymidine)	0.03347761673121393
+547	Coriobacteriaceae_SGB66221	vanillate;N,N,N-trimethyl-alanylproline betaine (TMAP);creatinine	0.03347761673121393
+548	Muribaculaceae_SGB48227	4-hydroxyphenylacetylglycine	0.03347761673121393
+549	Muribaculaceae_SGB48227	L-urobilin	0.03347761673121393
+550	Coriobacteriaceae_SGB66221	linolenoyl ethanolamide	0.0334792128066124
+551	Firmicutes_SGB63246;Muribaculaceae_SGB2126	butyrylputrescine/isobutyrylputrescine	0.033515202573360034
+552	Firmicutes_SGB63246	cystathionine	0.03360268151240703
+553	Firmicutes_unclassified_SGB14909	N-acetyltaurine	0.03360268151240703
+554	Megasphaera_elsdenii_SGB5862	isohyodeoxycholate	0.03360268151240703
+555	Muribaculaceae_SGB2126	2-hydroxydecanoate	0.033632076616716466
+556	Muribaculaceae_SGB2126	2-methoxyhydroquinone sulfate (2)	0.033632076616716466
+557	Firmicutes_unclassified_SGB14909	tyrosine	0.03372680761052936
+558	Slackia_faecicanis_SGB33547	gentisate;2-oxindole-3-acetate	0.03372680761052936
+559	Ligilactobacillus_ruminis_SGB7061	phenylpropionylglycine	0.033907821837151395
+560	Slackia_SGB14778_SGB14778	lysine	0.034065420257957696
+561	Erysipelotrichaceae_SGB105325	linoleoyl ethanolamide	0.034065420257957696
+562	Slackia_SGB14778_SGB14778	malate	0.03417083410563357
+563	Prevotella_copri_clade_A_SGB1626	hydantoin-5-propionate	0.03417083410563357
+564	Lactobacillus_acidophilus_SGB7044	2-hydroxydecanoate	0.03417083410563357
+565	Erysipelotrichaceae_SGB65948	dehydrolithocholate	0.03417083410563357
+566	Hydrogenoanaerobacterium_SGB53821_SGB53821	guanine	0.03440979641363951
+567	Coriobacteriaceae_SGB66221	1,2-dilinoleoyl-GPE (18:2/18:2)*	0.03440979641363951
+568	Muribaculaceae_SGB48227	isoleucylglycine	0.03440979641363951
+569	Firmicutes_SGB72905;Hydrogenoanaerobacterium_SGB53821_SGB53821	phenylpyruvate	0.03465032129702068
+570	Erysipelotrichaceae_SGB105325	secoisolariciresinol	0.03468410959684352
+571	Slackia_faecicanis_SGB33547	pyrraline	0.03468410959684352
+572	Hydrogenoanaerobacterium_SGB53821_SGB53821	dihydroferulate	0.03481872238766539
+573	Firmicutes_SGB63246;Muribaculaceae_SGB2126	isoleucylglycine	0.03481872238766539
+574	Muribaculum_gordoncarteri_SGB2087	cholic acid glucuronide	0.034834699605820516
+575	Slackia_faecicanis_SGB33547	1-methyl-4-imidazoleacetate	0.03483640969400558
+576	Collinsella_SGB14744_SGB14744	dipicolinate	0.03483640969400558
+577	Collinsella_intestinalis_SGB14741	hexadecadienoate (16:2n6)	0.03491992167717546
+578	Slackia_faecicanis_SGB33547	propionylglutamine	0.035018241646546384
+579	Erysipelotrichaceae_SGB105325	linoleoyl-linoleoyl-glycerol (18:2/18:2) [1]*	0.035084825248437305
+580	Limosilactobacillus_reuteri_SGB7095	delta-tocopherol	0.03518265647552471
+581	Slackia_faecicanis_SGB33547	3-aminoisobutyrate	0.03520340725240865
+582	Ligilactobacillus_ruminis_SGB7061	isohyodeoxycholate	0.03520340725240865
+583	Erysipelotrichaceae_SGB105325	N-palmitoyl-sphingosine (d18:1/16:0);ceramide (d18:2/24:1, d18:1/24:2)*	0.03520340725240865
+584	Muribaculum_gordoncarteri_SGB2087	hydroxystearate sulfate	0.03523428980642777
+585	Firmicutes_SGB63246;Muribaculaceae_SGB2126	enterolactone	0.035275613170740544
+586	Muribaculaceae_SGB2126	valerate (5:0)	0.035275613170740544
+587	Slackia_SGB14781_SGB14781	eicosapentaenoate (EPA; 20:5n3)	0.035342620549714515
+588	Slackia_faecicanis_SGB33547	6-hydroxynicotinate	0.035342620549714515
+589	Clostridiaceae_bacterium_Marseille_Q3526_SGB4703	ornithine	0.035350309318034456
+590	Limosilactobacillus_reuteri_SGB7095	guanosine;adenosine;uridine	0.03539225948649609
+591	Streptococcus_alactolyticus_SGB8017	butyrate/isobutyrate (4:0)	0.035443593704370176
+592	Collinsella_tanakaei_SGB14737	caproate (6:0)	0.035443593704370176
+593	Clostridiaceae_bacterium_SGB4721	lithocholate	0.035468717940935555
+594	Ligilactobacillus_ruminis_SGB7061	arachidonate (20:4n6);docosapentaenoate (n6 DPA; 22:5n6)	0.03581563698082567
+595	Prevotella_copri_clade_A_SGB1626	dCMP	0.03581563698082567
+596	Erysipelotrichaceae_SGB105325	phosphocholine	0.03581563698082567
+597	Streptococcus_alactolyticus_SGB8017	N2-acetyllysine	0.03603335598547999
+598	Firmicutes_SGB72905	isovalerate (C5)	0.036136144742715474
+599	Firmicutes_SGB63246	dihydrocaffeate sulfate (2)	0.03631240712710081
+600	Parasutterella_SGB9260_SGB9260	naringenin	0.03639398026356947
+601	Dubosiella_newyorkensis_SGB6789	3-dehydrodeoxycholate	0.03639398026356947
+602	Firmicutes_SGB72905;Hydrogenoanaerobacterium_SGB53821_SGB53821	lyxonate	0.03639398026356947
+603	Turicibacter_sp_TS3_SGB39153	sphingomyelin (d18:1/24:1, d18:2/24:0)*	0.03639398026356947
+604	Erysipelotrichaceae_SGB105325	indoleacetate	0.036446109717238336
+605	Muribaculaceae_SGB2126	thiamin monophosphate	0.036464415919205816
+606	Slackia_faecicanis_SGB33547	enterolactone	0.03667763629842331
+607	Erysipelotrichaceae_SGB105325	diosmetin	0.03667763629842331
+608	Firmicutes_SGB72905	7-ketolithocholate	0.03667763629842331
+609	Erysipelotrichaceae_SGB65947	N-acetyltaurine	0.036811876102538436
+610	Collinsella_SGB14745_SGB14745	propionylglutamine	0.036811876102538436
+611	Collinsella_intestinalis_SGB14741	anserine	0.036811876102538436
+612	Parasutterella_SGB9260_SGB9260	N-acetylarginine	0.03685760232869915
+613	Limosilactobacillus_reuteri_SGB7095	cinnamate	0.03685760232869915
+614	Clostridiaceae_bacterium_SGB4721	ribonate;lyxonate	0.03685760232869915
+615	Muribaculaceae_SGB48227	alanylleucine;phenylalanylalanine	0.03690876935663383
+616	Coriobacteriaceae_SGB66221	N-acetylcysteine	0.037220569987420626
+617	Lactobacillus_acidophilus_SGB7044	benzoate	0.03757664322373799
+618	Coriobacteriaceae_SGB66221;Atopobiaceae_unclassified_SGB63087_SGB63087	indoleacetate	0.03757664322373799
+619	Prevotellaceae_SGB1482;Parasutterella_SGB9260_SGB9260	1-carboxyethylvaline	0.03774149382854898
+620	Erysipelotrichaceae_SGB105325	1-carboxyethylvaline	0.03774149382854898
+621	Lactobacillus_acidophilus_SGB7044	ceramide (d18:1/17:0, d17:1/18:0)*	0.03774149382854898
+622	Slackia_SGB14781_SGB14781	N6-methyllysine	0.03775273890393296
+623	Prevotellaceae_SGB1481;Prevotella_copri_clade_A_SGB1626	dehydrolithocholate;3-dehydrodeoxycholate;12-ketolithocholate	0.03775273890393296
+624	Prevotella_copri_clade_A_SGB1626	N-acetyl-isoputreanine	0.03780837788500233
+625	Limosilactobacillus_reuteri_SGB7095	1-palmitoyl-GPG (16:0)*	0.03785623422698254
+626	Collinsella_intestinalis_SGB14741	inosine	0.03785623422698254
+627	UNKNOWN	piperidine	0.03796498867768138
+628	Firmicutes_SGB63246	xanthurenate	0.03796498867768138
+629	Slackia_faecicanis_SGB33547	alanylleucine;phenylalanylalanine	0.03796498867768138
+630	Slackia_faecicanis_SGB33547	valylleucine;leucylglutamine*	0.03796498867768138
+631	Firmicutes_unclassified_SGB14909	fumarate	0.03805516169595275
+632	Slackia_faecicanis_SGB33547	N-acetylglutamate	0.03817593486100457
+633	Clostridiaceae_bacterium_Marseille_Q3526_SGB4703	aspartate	0.03830071218446079
+634	Lachnospiraceae_SGB4870;Lachnospiraceae_SGB66069;Lachnospiraceae_SGB58537	S-methylcysteine	0.03830071218446079
+635	Turicibacter_sp_TS3_SGB39153	isocaproate (i6:0)	0.03830071218446079
+636	Slackia_faecicanis_SGB33547	naringenin	0.03830071218446079
+637	Lactobacillus_acidophilus_SGB7044	syringic acid	0.03830071218446079
+638	Ligilactobacillus_ruminis_SGB7061	2-piperidinone	0.03830071218446079
+639	Muribaculaceae_SGB48227	indoleacetylglycine	0.03853439684306371
+640	Dubosiella_newyorkensis_SGB6789	diacetylspermidine*	0.03855930991766894
+641	Firmicutes_SGB63246	quinate	0.0386248565514448
+642	Limosilactobacillus_reuteri_SGB7095	xanthosine	0.03888301061805015
+643	Slackia_SGB14781_SGB14781	AMP	0.03888301061805015
+644	Muribaculaceae_SGB2126	linoleoyl-linolenoyl-glycerol (18:2/18:3) [2]*	0.03888301061805015
+645	Erysipelotrichaceae_SGB105325	7-ketolithocholate	0.03889635884700587
+646	Muribaculaceae_SGB48227	methylmalonate (MMA)	0.03896527046016535
+647	Collinsella_intestinalis_SGB14741	2,4,6-trihydroxybenzoate	0.03896527046016535
+648	Erysipelotrichaceae_SGB105325	N2-acetyl,N6-methyllysine;N2-acetyl,N6,N6-dimethyllysine	0.038983822226937005
+649	Firmicutes_SGB63246;Muribaculaceae_SGB2126	valylleucine;leucylglutamine*	0.0391259207340714
+650	Ligilactobacillus_ruminis_SGB7061	alpha-CEHC	0.0391298782557452
+651	Lactobacillus_acidophilus_SGB7044	cytosine	0.039227209379311935
+652	Slackia_faecicanis_SGB33547	pantetheine	0.03932015560725582
+653	Muribaculaceae_SGB48227	quinate	0.039442411047842844
+654	Ruminococcus_gnavus_SGB4584	eicosenoylcarnitine (C20:1)*	0.03955306743654769
+655	Muribaculaceae_SGB2126	butyrylglutamine/isobutyrylglutamine	0.039571011171442835
+656	Firmicutes_unclassified_SGB4994	deoxycholate	0.0395833728034275
+657	Firmicutes_unclassified_SGB4994	5-hydroxymethyluracil	0.03961869395764453
+658	Collinsella_SGB14744_SGB14744	dehydrolithocholate	0.03962823559489347
+659	Muribaculaceae_SGB2126	glycerophosphorylcholine (GPC)	0.039733096644632065
+660	Prevotella_copri_clade_A_SGB1626	2'-deoxycytidine	0.039771393402118306
+661	Acidaminococcaceae_SGB5750	N-methylalanine	0.03996557018420313
+662	Muribaculaceae_SGB2126	N-acetyl-3-methylhistidine*	0.03996557018420313
+663	Firmicutes_SGB72905	2,4-dihydroxybutyrate	0.040034702939774916
+664	Collinsella_sp_BA40_SGB86217	methionine sulfone	0.040034702939774916
+665	Collinsella_intestinalis_SGB14741	linoleoylcarnitine (C18:2)*	0.04010907658128596
+666	Hydrogenoanaerobacterium_SGB53821_SGB53821	(N(1) + N(8))-acetylspermidine	0.04016678709508269
+667	Prevotellaceae_SGB1481	carboxyethyl-GABA	0.04016678709508269
+668	Firmicutes_SGB72905	alpha-ketoglutaramate*	0.04018715505527044
+669	Atopobiaceae_unclassified_SGB105119_SGB105119	bilirubin (E,E)*	0.04018715505527044
+670	Muribaculum_gordoncarteri_SGB2087	cholesterol sulfate	0.04026769303905764
+671	Firmicutes_SGB63246	diacetylspermidine*	0.040364084052559174
+672	Clostridiaceae_bacterium_SGB4721	1-(1-enyl-stearoyl)-GPE (P-18:0)*	0.04037567591525657
+673	Firmicutes_SGB72905	vanillate	0.04039394028004014
+674	Muribaculaceae_SGB2126	matairesinol	0.04039394028004014
+675	Prevotella_copri_clade_A_SGB1626	tyrosine	0.04045887415091618
+676	Dubosiella_newyorkensis_SGB6789	palmitoylcarnitine (C16)	0.04046683550282193
+677	UNKNOWN	maltotriose	0.04046683550282193
+678	Slackia_SGB14778_SGB14778	caprate (10:0)	0.04046683550282193
+679	Firmicutes_unclassified_SGB14909	3-(2-hydroxyphenyl)propionate	0.040518483874513
+680	Slackia_SGB14781_SGB14781	dehydrolithocholate	0.04061950197406844
+681	Ligilactobacillus_ruminis_SGB7061	3-(2-hydroxyphenyl)propionate	0.040757480192758995
+682	Clostridiaceae_bacterium_Marseille_Q3526_SGB4703	1-stearoyl-GPI (18:0)	0.04086270214938294
+683	Prevotella_copri_clade_A_SGB1626	norvaline	0.04086270214938294
+684	Muribaculaceae_SGB2126	N,N-dimethyl-pro-pro	0.040917883582893014
+685	Lactobacillus_johnsonii_SGB7041	N-acetyl-1-methylhistidine*	0.040935261162881986
+686	Peptacetobacter_hiranonis_SGB6131	carboxymethylproline	0.040935261162881986
+687	Firmicutes_SGB72905	indolin-2-one	0.040942875720513694
+688	Muribaculaceae_SGB48227	leucylglycine	0.0410538024475629
+689	Collinsella_SGB14744_SGB14744	3'-dephospho-acetyl-CoA	0.04111715113267102
+690	Peptacetobacter_hiranonis_SGB6131	N-oleoyl-sphingosine (d18:1/18:1)*	0.04115117281892878
+691	Firmicutes_unclassified_SGB14909	indolin-2-one	0.04122404749082865
+692	Firmicutes_SGB63246	dehydrolithocholate	0.04122404749082865
+693	Collinsella_intestinalis_SGB14741	benzoate	0.04126999656186505
+694	Limosilactobacillus_reuteri_SGB7095	N,N-dimethyl-5-aminovalerate	0.04130587333918645
+695	Erysipelotrichaceae_SGB65948	N-acetyl-1-methylhistidine*	0.04130587333918645
+696	Prevotella_copri_clade_A_SGB1626	3-phenylpropionate (hydrocinnamate)	0.041408055010509974
+697	Erysipelotrichaceae_SGB65948	N-acetyltaurine	0.041408055010509974
+698	Collinsella_SGB14744_SGB14744	3-methylglutaconate	0.0415552304951551
+699	Collinsella_intestinalis_SGB14741	6-hydroxynicotinate	0.04160171244461062
+700	Lactobacillus_acidophilus_SGB7044	N-methylproline	0.04161287199719275
+701	Coriobacteriaceae_SGB66221	palmitoyl ethanolamide	0.04166582277160177
+702	Collinsella_intestinalis_SGB14741	isoleucylhydroxyproline*	0.041735500964451167
+703	Coriobacteriaceae_SGB66221	valylglycine	0.041735500964451167
+704	Erysipelotrichaceae_SGB105325	enterolactone	0.04174141654785715
+705	Muribaculum_gordoncarteri_SGB2087	phenylalanylglycine	0.04175875612049767
+706	Erysipelotrichaceae_SGB65948	6-oxolithocholate	0.0418633089752853
+707	Firmicutes_SGB72905	erythrose	0.04187173562886256
+708	Prevotella_copri_clade_A_SGB1626	hydroquinone sulfate	0.041910259471733886
+709	Erysipelotrichaceae_SGB105325	chrysoeriol	0.0420453722019786
+710	Firmicutes_SGB72905	2'-deoxyadenosine 5'-monophosphate	0.042105806586797044
+711	Collinsella_tanakaei_SGB14737	isohyodeoxycholate	0.0423004618642059
+712	Blautia_SGB47659_SGB47659	lithocholate	0.04240502832324394
+713	Lachnospiraceae_SGB4870	N-succinyl-leucine	0.04242481565632161
+714	Firmicutes_unclassified_SGB14909	2S,3R-dihydroxybutyrate	0.04257831773010834
+715	Turicibacter_sp_TS3_SGB39153	hydroxypalmitoyl sphingomyelin (d18:1/16:0(OH))	0.04263027962148432
+716	Parasutterella_SGB9260_SGB9260	L-urobilin	0.042894690306978775
+717	Muribaculaceae_SGB2126	serine	0.042992342232562764
+718	Clostridiaceae_bacterium_SGB4721	N,N-dimethyl-5-aminovalerate	0.042992342232562764
+719	Firmicutes_unclassified_SGB14909	(3'-5')-uridylyluridine	0.04306483740818071
+720	Muribaculaceae_SGB48227	1-oleoyl-2-linoleoyl-GPE (18:1/18:2)*	0.04308332814340036
+721	Atopobiaceae_unclassified_SGB105119_SGB105119	retinol (Vitamin A)	0.04327787025720757
+722	Clostridiaceae_bacterium_SGB4721	fumarate	0.04327787025720757
+723	Slackia_faecicanis_SGB33547	3'-dephospho-acetyl-CoA	0.04327787025720757
+724	Prevotella_copri_clade_A_SGB1626	myristoleate (14:1n5)	0.043313233408856136
+725	Lactobacillus_acidophilus_SGB7044	N-acetyl-3-methylhistidine*	0.043350312713570205
+726	Atopobiaceae_unclassified_SGB63087_SGB63087	creatinine	0.043487300938054814
+727	Erysipelotrichaceae_SGB105325	N,N-dimethylalanine	0.043487300938054814
+728	Collinsella_intestinalis_SGB14741	1-carboxyethylphenylalanine	0.043575705147529745
+729	Muribaculum_gordoncarteri_SGB2087	N-acetyl-isoputreanine	0.043575705147529745
+730	Muribaculaceae_SGB2126	D-urobilin	0.043941999182528266
+731	Atopobiaceae_unclassified_SGB63087_SGB63087	xanthine	0.04397249971229267
+732	Slackia_faecicanis_SGB33547	valylglycine	0.043980530231368005
+733	Prevotella_copri_clade_A_SGB1626	(12 or 13)-methylmyristate (a15:0 or i15:0)	0.04418198501713119
+734	Muribaculaceae_SGB2126	S-methylcysteine	0.04418835559099715
+735	Clostridiaceae_bacterium_SGB4721	malonate	0.044256890120785645
+736	Erysipelotrichaceae_SGB105325	AMP	0.044312207405539976
+737	Dubosiella_newyorkensis_SGB6789	erythritol	0.04454874497594111
+738	Firmicutes_SGB63246	propionylglutamine	0.044557105855916976
+739	Slackia_faecicanis_SGB33547	palmitoyl dihydrosphingomyelin (d18:0/16:0)*	0.04470729079545977
+740	Erysipelotrichaceae_SGB105325	valylglycine	0.0447155329064993
+741	Collinsella_intestinalis_SGB14741	valylglutamine	0.04491864099293933
+742	Blautia_SGB47659_SGB47659	glycodeoxycholate	0.04494281678504363
+743	Prevotella_copri_clade_A_SGB1626	1-palmitoyl-GPG (16:0)*	0.04494281678504363
+744	Hydrogenoanaerobacterium_SGB53821_SGB53821	tryptophan	0.04494281678504363
+745	Atopobiaceae_unclassified_SGB63087_SGB63087	N-methylhydantoin	0.04494281678504363
+746	Slackia_SGB14778_SGB14778	sphingomyelin (d17:1/16:0, d18:1/15:0, d16:1/17:0)*	0.04494281678504363
+747	Erysipelotrichaceae_SGB105325	naringenin	0.045297546145693264
+748	Firmicutes_unclassified_SGB14909	spermidine	0.045501654736738686
+749	Collinsella_SGB14744_SGB14744	linoleoylcarnitine (C18:2)*	0.04560755833566404
+750	Muribaculum_gordoncarteri_SGB2087	(N(1) + N(8))-acetylspermidine	0.045854684104399156
+751	Muribaculaceae_SGB2126	N-acetyltaurine	0.04611351266886861
+752	Dubosiella_newyorkensis_SGB6789	tryptophylglycine	0.04611415323305181
+753	Firmicutes_SGB72905	N-glycolylneuraminate	0.04619927271099424
+754	Firmicutes_unclassified_SGB14909	valylglutamine	0.046214627577701894
+755	Atopobiaceae_unclassified_SGB105119_SGB105119	allantoin	0.04651597612396424
+756	Slackia_faecicanis_SGB33547	tryptophylglycine	0.04651597612396424
+757	Slackia_SGB14778_SGB14778	pyruvate	0.04651597612396424
+758	Muribaculum_gordoncarteri_SGB2087	quinate	0.04654448523479428
+759	Slackia_SGB14781_SGB14781	cis-3,4-methyleneheptanoylcarnitine	0.04657496329723811
+760	Clostridiaceae_bacterium_SGB4721	indole	0.04657496329723811
+761	Erysipelotrichaceae_SGB65948	glycylvaline	0.04657496329723811
+762	Firmicutes_SGB63246	1-ribosyl-imidazoleacetate*	0.04657496329723811
+763	Clostridiaceae_bacterium_SGB4721	adenosine	0.04658013235265439
+764	Dubosiella_newyorkensis_SGB6789	riboflavin (Vitamin B2)	0.04658013235265439
+765	Prevotella_copri_clade_A_SGB1626	dihydroferulate	0.04658013235265439
+766	Muribaculum_gordoncarteri_SGB2087	enterolactone	0.046867127482381164
+767	Firmicutes_SGB72905	2-O-methylascorbic acid	0.047041226005526154
+768	Collinsella_intestinalis_SGB14741	3,4-dihydroxybutyrate	0.04709299162333508
+769	Prevotella_copri_clade_A_SGB1626	N-palmitoyl-sphingosine (d18:1/16:0)	0.04709299162333508
+770	Limosilactobacillus_reuteri_SGB7095	N-palmitoyl-sphingosine (d18:1/16:0)	0.04712293817200331
+771	Collinsella_SGB14744_SGB14744	enterolactone sulfate	0.04718459249889043
+772	Firmicutes_unclassified_SGB14909	N,N,N-trimethyl-5-aminovalerate	0.047276921030127685
+773	Collinsella_intestinalis_SGB14741	phenylalanylalanine	0.047276921030127685
+774	Firmicutes_unclassified_SGB14909	alpha-hydroxyisovalerate	0.047276921030127685
+775	Collinsella_SGB14744_SGB14744	palmitoleoylcarnitine (C16:1)*	0.0475543572564775
+776	Firmicutes_SGB63246	phenylpyruvate	0.0475543572564775
+777	Hydrogenoanaerobacterium_SGB53821_SGB53821	3-hydroxy-3-methylglutarate	0.0475543572564775
+778	Muribaculaceae_SGB48227	1-methylhypoxanthine	0.04757110821979981
+779	Streptococcus_alactolyticus_SGB8017	oleoyl-arachidonoyl-glycerol (18:1/20:4) [2]*	0.047580245961015816
+780	Muribaculaceae_SGB2126	7-ketolithocholate	0.047580245961015816
+781	Firmicutes_SGB72905	2-hydroxy-4-(methylthio)butanoic acid	0.04770459611039681
+782	Firmicutes_unclassified_SGB14909	pyridoxal	0.047741403220619476
+783	Dubosiella_newyorkensis_SGB6789	2'-O-methyluridine	0.04775216461339573
+784	Blautia_caecimuris_SGB4862	N-methylalanine	0.04775250521518633
+785	Megasphaera_elsdenii_SGB5862	guanosine	0.047801756969459146
+786	Peptacetobacter_hiranonis_SGB6131	N-acetylglutamine	0.04792974140421433
+787	Erysipelotrichaceae_SGB105325	cysteinylglycine	0.04792974140421433
+788	Dubosiella_newyorkensis_SGB6789	agmatine	0.04797534035725866
+789	Limosilactobacillus_reuteri_SGB7095	hexadecadienoate (16:2n6)	0.04797534035725866
+790	Fournierella_massiliensis_SGB15280	cysteine sulfinic acid	0.04802789149497121
+791	Parasutterella_SGB9260_SGB9260	butyrate/isobutyrate (4:0)	0.04802789149497121
+792	Muribaculaceae_SGB2126	glycine	0.04802789149497121
+793	Hydrogenoanaerobacterium_SGB53821_SGB53821	N-acetylphenylalanine	0.04802789149497121
+794	Muribaculaceae_SGB48227	methionine sulfone	0.04802789149497121
+795	Atopobiaceae_unclassified_SGB105119_SGB105119	N-acetylcysteine	0.048284888270484154
+796	Firmicutes_unclassified_SGB14909	cytidine	0.04831030004138285
+797	Acidaminococcaceae_SGB5750	N-acetyl-1-methylhistidine*	0.04831039098790404
+798	Muribaculaceae_SGB48227	7-ketolithocholate	0.04845703631150668
+799	Parasutterella_SGB9260_SGB9260	N-acetyltaurine	0.048569261026720066
+800	Firmicutes_unclassified_SGB14909	glycerol 3-phosphate	0.04878775136805188
+801	Limosilactobacillus_reuteri_SGB7095	1-carboxyethylvaline	0.04882523423973031
+802	Acidaminococcaceae_SGB5750	guanidinoacetate	0.048871293563132266
+803	Clostridiaceae_bacterium_SGB4721	alpha-ketoglutaramate*	0.04887830521720699
+804	Lactobacillus_johnsonii_SGB7041	4-acetamidobutanoate	0.04923120506591482
+805	Adlercreutzia_equolifaciens_SGB14797	7-ketolithocholate	0.049283425244964506
+806	Lactobacillus_acidophilus_SGB7044	N-acetylhistamine	0.049304489674566486
+807	Muribaculum_gordoncarteri_SGB2087	serotonin	0.049304489674566486
+808	Muribaculum_gordoncarteri_SGB2087	hydroxy-undecanedioate (OH-C11:0-DC)*	0.049354340290605175
+809	Firmicutes_SGB4052	lithocholate	0.049354340290605175
+810	Prevotella_copri_clade_A_SGB1626	4-hydroxybenzoate	0.049396876576512816
+811	Muribaculum_gordoncarteri_SGB2087	erythronate*	0.049449977533840325
+812	Prevotella_copri_clade_A_SGB1626	3-methylhistidine	0.049571457071494275
+813	Muribaculaceae_SGB2126	sinapate	0.049571457071494275
+814	Limosilactobacillus_reuteri_SGB7095	2'-deoxyuridine	0.049571457071494275
+815	Prevotella_copri_clade_A_SGB1626	glycerophosphoglycerol	0.049571457071494275
+816	Muribaculaceae_SGB2126	1-methyl-4-imidazoleacetate	0.049571457071494275
+817	Firmicutes_SGB63246	matairesinol	0.049571457071494275
+818	Firmicutes_SGB63246	diosmetin	0.049571457071494275
+819	Erysipelotrichaceae_SGB105325	isovalerate (C5)	0.049571457071494275
+820	Firmicutes_SGB63246	indoleacetylglycine	0.049571457071494275
+821	Atopobiaceae_unclassified_SGB105119_SGB105119	dehydrophytosphingosine*	0.049571457071494275
+822	Muribaculaceae_SGB2126	N,N-dimethylalanine	0.04971251435944619
+823	Prevotellaceae_SGB1481	hexadecadienoate (16:2n6)	0.04975962452084462
+824	Slackia_faecicanis_SGB33547	2'-O-methyluridine	0.0497675213412264

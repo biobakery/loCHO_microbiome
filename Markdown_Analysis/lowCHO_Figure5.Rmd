@@ -1,0 +1,1190 @@
+---
+title: "Clean_amino_acid_figure"
+author: "Jacob T. Nearing Ph.D."
+date: "2024-12-13"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir = getwd())
+
+#source helper functions
+source("Utility_Scripts/helper_functions.R")
+source("Utility_Scripts/load_data_functions.R")
+
+library(dplyr)
+library(mgsub)
+library(ComplexHeatmap)
+library(reshape)
+library(ggplot2)
+library(vegan)
+library(ggrepel)
+library(pals)
+library(patchwork)
+```
+
+```{r}
+col_diets = c("High Carb" = "red3", "High Fat" = "darkslateblue", "High Protein" = "steelblue")
+default_anno_cols <- list(
+  diet=col_diets,
+  Diet=col_diets,
+  `Diet Order Names`=c(`High Protein --> High Fat`="purple",
+                       `High Fat --> High Protein`="orange"))
+
+
+cor_colors <- circlize::colorRamp2(c(-1, 0, 1),
+                                   c("blue", "white", "red"))
+```
+
+Load in data
+```{r}
+#load metabolites..
+bug <- load_taxa_data()
+bug_common <- bug[,is_common(t(bug))]
+  
+metadata <- load_meta_data(m4_data = bug)
+metadata$Diet <- metadata$`Diet Name`
+rownames(metadata) <- metadata$`Metagenomics Sample Number`
+
+fecal_mbx <- load_fecalMbx_data(metadata = metadata)
+fecal_raw_mbx <- load_rawfecalMbx_data(metadata=metadata)
+
+fecal_mbx_rank <- apply(fecal_mbx, 2, rank)
+fecal_mbx_raw_rank <- apply(fecal_raw_mbx, 2, rank)
+
+serum_mbx <- load_serumMbx_data(metadata=metadata)
+serum_mbx_raw <- load_rawserumMbx_data(metadata=metadata)
+
+serum_mbx_rename <- serum_mbx
+serum_mbx_rename$`Metagenomics Sample Number` <- rownames(serum_mbx)
+
+serum_mbx_rank <- apply(serum_mbx, 2, rank)
+serum_mbx_raw_rank <- apply(serum_mbx_raw, 2, rank)
+```
+
+
+```{r}
+bug$`Metagenomics Sample Number` <- rownames(bug)
+metadata_bug <- metadata %>% left_join(bug)
+```
+
+
+Load in fecal metabolite annotations...
+```{r}
+metabolite_info <- read_excel("~/Dropbox_Harvard/hutlab/Jacob/Repos/Hills_Project/Keto-Project/Analysis/Data/Metabolite_annotations/HILL-0105-20MDTA CLIENT DATA TABLE (FECES).XLSX", skip=14, sheet = 2)
+
+serum_metabolite_info <- read_excel("~/Dropbox_Harvard/hutlab/Jacob/Repos/Hills_Project/Keto-Project/Analysis/Data/Metabolite_annotations/HILL-0105-20MDTA CLIENT DATA TABLE (SERUM).XLSX", skip=15, sheet = 2)
+
+
+metabolite_info <- metabolite_info[,c(2:13)]
+serum_info <- serum_metabolite_info[,c(2:13)]
+```
+# Total ammonia
+
+```{r}
+
+metadata %>% ggplot(aes(x=Diet, y=`Fecal Ammonia_mmol/gram`, fill=Diet)) + 
+  geom_boxplot() +
+  ggpubr::geom_pwc() +
+  theme_classic(base_size = 12) +
+  scale_fill_manual(values=col_diets)
+
+
+ggsave("Display_Items/From_Figure5_script/Total_ammonia.pdf", width=5, height=3)
+```
+
+# Analysis of amino acid abundance
+
+```{r}
+proteo_aas <- c("arginine", "histidine", "lysine", "asparagine", "glutamine",
+                "serine", "threonine", "aspartate", "glutamate",
+                "glycine", "proline", "cysteine", "alanine",
+                "valine", "isoleucine", "leucine", "methionine", "phenylalanine",
+                "tyrosine", "tryptophan")
+```
+
+
+## Heatmaps
+
+### Amino acids
+Prep the data
+```{r}
+metabolite_info_aa <- metabolite_info %>% filter(SUPER_PATHWAY=="Amino Acid")
+prote_aa_info <- metabolite_info %>% filter(BIOCHEMICAL %in% proteo_aas)
+
+#generate data frame with only proteogenic aas
+
+fecal_mbx_aa <- fecal_mbx[,proteo_aas]
+fecal_mbx_aa_raw <- fecal_raw_mbx[,proteo_aas]
+
+serum_mbx_aa <- serum_mbx[,proteo_aas]
+serum_mbx_aa_raw <- serum_mbx_raw[,proteo_aas]
+```
+
+#### Fecal
+```{r}
+Heatmap_annos <- HeatmapAnnotation(df=metadata[,c("Diet", "Diet Order Names")],
+                              col = default_anno_cols)
+
+proteo_heat <- Heatmap(log(t(fecal_mbx_aa)),
+                       show_column_names = F,
+                        bottom_annotation = Heatmap_annos,
+                        row_names_gp = gpar(fontsize=8))
+
+
+pdf("Display_Items/From_Figure5_script/Proteo_AA_heatmap.pdf", width = 8, height = 5)
+proteo_heat
+dev.off()
+
+
+##total aas
+total_aas_fecal <- rowSums(fecal_mbx_aa_raw)
+plot_data <- data.frame(samples=metadata$`Metagenomics Sample Number`,
+                        Diet=metadata$Diet,
+                        total_aas=total_aas_fecal)
+
+
+plot_data %>% ggplot(aes(x=Diet, y=total_aas_fecal, fill=Diet)) + 
+  geom_boxplot() +
+  ggpubr::geom_pwc() +
+  theme_classic(base_size = 12) +
+  scale_fill_manual(values = col_diets) +
+  ylab("Sum of amino acid peak areas") +
+  xlab("") +
+  scale_y_continuous(expand = expansion(mult = c(0.05, 0.15)))
+  
+ggsave(filename = "Display_Items/From_Figure5_script/amino_acid_fecal_total.pdf", 
+       width=5, height=3)
+```
+
+
+#### Serum
+
+```{r}
+proteo_heat_serum <- Heatmap(log(t(serum_mbx_aa)),
+                       show_column_names = F,
+                        bottom_annotation = Heatmap_annos,
+                        row_names_gp = gpar(fontsize=8))
+
+pdf("Display_Items/From_Figure5_script/amino_acid_serum_heat.pdf", width = 8, height = 5)
+proteo_heat_serum
+dev.off()
+#above is not in main paper due to space.
+
+total_aas_serum <- rowSums(serum_mbx_aa_raw)
+plot_data <- data.frame(samples=metadata$`Metagenomics Sample Number`,
+                        Diet=metadata$Diet,
+                        total_aas=total_aas_serum)
+
+
+plot_data %>% ggplot(aes(x=Diet, y=total_aas_serum, fill=Diet)) + 
+  geom_boxplot() +
+  ggpubr::geom_pwc() +
+  theme_classic(base_size = 12) +
+  scale_fill_manual(values = col_diets) +
+  ylab("Sum of amino acid peak areas") +
+  xlab("") +
+  scale_y_continuous(expand = expansion(mult = c(0.05, 0.15)))
+  
+ggsave(filename = "Display_Items/From_Figure5_script/amino_acid_serum_total.pdf", 
+       width=5, height=3)
+```
+
+### Dipeptides
+
+```{r}
+dipeptides_info <- metabolite_info %>% filter(SUB_PATHWAY=="Dipeptide")
+serum_dipeptides_info <- serum_metabolite_info %>% filter(SUB_PATHWAY=="Dipeptide")
+
+fecal_mbx_dipeptides <- fecal_mbx[,dipeptides_info$BIOCHEMICAL]
+fecal_mbx_dipeptides_raw <- fecal_raw_mbx[,dipeptides_info$BIOCHEMICAL]
+
+serum_mbx_dipeptides <- serum_mbx[,serum_dipeptides_info$BIOCHEMICAL]
+serum_mbx_dipeptides_raw <- serum_mbx_raw[,serum_dipeptides_info$BIOCHEMICAL]
+```
+
+#### Fecal
+
+```{r}
+dipeptide_heat <- Heatmap(log(t(fecal_mbx_dipeptides)),
+                       show_column_names = F,
+                        bottom_annotation = Heatmap_annos,
+                        row_names_gp = gpar(fontsize=8))
+
+
+
+pdf("Display_Items/From_Figure5_script/dipeptide_fecal_heat.pdf", width = 8, height = 5)
+dipeptide_heat
+dev.off()
+
+##total aas
+total_fecal <- rowSums(fecal_mbx_dipeptides_raw)
+plot_data <- data.frame(samples=metadata$`Metagenomics Sample Number`,
+                        Diet=metadata$Diet,
+                        total_aas=total_fecal)
+
+
+plot_data %>% ggplot(aes(x=Diet, y=total_fecal, fill=Diet)) + 
+  geom_boxplot() +
+  ggpubr::geom_pwc() +
+  theme_classic(base_size = 12) +
+  scale_fill_manual(values = col_diets) +
+  ylab("Sum of dipeptide peak areas") +
+  xlab("") +
+  scale_y_continuous(expand = expansion(mult = c(0.05, 0.15)))
+  
+ggsave(filename = "Display_Items/From_Figure5_script/dipeptide_fecal_total.pdf", 
+       width=5, height=3)
+```
+
+
+#### Serum
+
+```{r}
+serum_dipeptide_heat <- Heatmap(log(t(serum_mbx_dipeptides)),
+                       show_column_names = F,
+                        bottom_annotation = Heatmap_annos,
+                        row_names_gp = gpar(fontsize=8))
+
+
+pdf("Display_Items/From_Figure5_script/dipeptide_serum_heat.pdf", width = 8, height = 5)
+serum_dipeptide_heat
+dev.off()
+
+##total aas
+total_serum <- rowSums(serum_mbx_dipeptides_raw)
+plot_data <- data.frame(samples=metadata$`Metagenomics Sample Number`,
+                        Diet=metadata$Diet,
+                        total_aas=total_serum)
+
+
+plot_data %>% ggplot(aes(x=Diet, y=total_serum, fill=Diet)) + 
+  geom_boxplot() +
+  ggpubr::geom_pwc() +
+  theme_classic(base_size = 12) +
+  scale_fill_manual(values = col_diets) +
+  ylab("Sum of dipeptide peak areas") +
+  xlab("") +
+  scale_y_continuous(expand = expansion(mult = c(0.05, 0.15)))
+  
+ggsave(filename = "Display_Items/From_Figure5_script/dipeptide_serum_total.pdf", 
+       width=5, height=3)
+```
+
+
+
+# Metabolite-Metabolite Correlations within diet
+
+
+```{r}
+fecal_mbx_rename <- fecal_mbx
+fecal_mbx_rename$`Metagenomics Sample Number` <- rownames(fecal_mbx_rename)
+
+metadata_fecal_mbx <- metadata %>% left_join(fecal_mbx_rename)
+
+fecal_raw_mbx_rename <- data.frame(fecal_raw_mbx, check.name=F)
+fecal_raw_mbx_rename$`Metagenomics Sample Number` <- rownames(fecal_raw_mbx_rename)
+
+metadata_fecal_mbx_raw <- metadata %>% left_join(fecal_raw_mbx_rename)
+```
+
+## High Fat
+
+### Pearson
+```{r}
+metadata_fecal_mbx_fat <- metadata_fecal_mbx %>% filter(`Diet Name`=="High Fat")
+#split to only columns that are the fecal metabolites
+metadata_fecal_mbx_fat_matrix <- metadata_fecal_mbx_fat[,108:889]
+
+#generate the correlation matrix
+fat_metabolite_cor_matrix <- cor(metadata_fecal_mbx_fat_matrix)
+#set NAs to 0
+fat_metabolite_cor_matrix[is.na(fat_metabolite_cor_matrix)] <- 0
+
+pdf("Display_Items/From_Figure5_script/fat_metabolite_metabolite_cors_hist.pdf", width = 8, height = 5)
+hist(fat_metabolite_cor_matrix, xlab="Metabolite-Metabolite correlations within high fat", main="")
+xlab("Correlations within high fat")
+dev.off()
+
+
+## heatmap with rows and column names
+ht1 <- Heatmap(fat_metabolite_cor_matrix,
+        show_row_names = T,
+        show_column_names = T,
+        show_row_dend = F,
+        show_column_dend = F,
+        col=cor_colors)
+pdf("Display_Items/From_Figure5_script/fat_metabolite_metabolite_cors_heat.pdf", width = 120, height = 120)
+ht1
+dev.off()
+
+
+
+rownames(fat_metabolite_cor_matrix)[which(!rownames(fat_metabolite_cor_matrix) %in% proteo_aas)] <- ""
+colnames(fat_metabolite_cor_matrix)[which(!colnames(fat_metabolite_cor_matrix) %in% proteo_aas)] <- ""
+
+rownames(fat_metabolite_cor_matrix)[which(rownames(fat_metabolite_cor_matrix) %in% proteo_aas)] <- "*"
+colnames(fat_metabolite_cor_matrix)[which(colnames(fat_metabolite_cor_matrix) %in% proteo_aas)] <- "*"
+
+## heatmap with rows and column names
+ht2 <- Heatmap(fat_metabolite_cor_matrix,
+        show_row_names = T,
+        show_column_names = T,
+        show_row_dend = F,
+        show_column_dend = F,
+        col=cor_colors)
+pdf("Display_Items/From_Figure5_script/fat_metabolite_metabolite_cors_heat_no_name.pdf", width = 12, height = 12)
+ht2
+dev.off()
+```
+
+
+### Spearman
+```{r}
+metadata_fecal_mbx_fat <- metadata_fecal_mbx %>% filter(`Diet Name`=="High Fat")
+#split to only columns that are the fecal metabolites
+metadata_fecal_mbx_fat_matrix <- metadata_fecal_mbx_fat[,108:889]
+
+#generate the correlation matrix
+fat_metabolite_cor_matrix <- cor(metadata_fecal_mbx_fat_matrix, method="spearman")
+#set NAs to 0
+fat_metabolite_cor_matrix[is.na(fat_metabolite_cor_matrix)] <- 0
+
+pdf("Display_Items/From_Figure5_script/fat_metabolite_metabolite_cors_hist_spear.pdf", width = 8, height = 5)
+hist(fat_metabolite_cor_matrix, xlab="Metabolite-Metabolite correlations within high fat", main="")
+xlab("Correlations within high fat")
+dev.off()
+
+
+## heatmap with rows and column names
+ht1 <- Heatmap(fat_metabolite_cor_matrix,
+        show_row_names = T,
+        show_column_names = T,
+        show_row_dend = F,
+        show_column_dend = F,
+        col=cor_colors)
+pdf("Display_Items/From_Figure5_script/fat_metabolite_metabolite_cors_heat_spear.pdf", width = 120, height = 120)
+ht1
+dev.off()
+
+
+
+rownames(fat_metabolite_cor_matrix)[which(!rownames(fat_metabolite_cor_matrix) %in% proteo_aas)] <- ""
+colnames(fat_metabolite_cor_matrix)[which(!colnames(fat_metabolite_cor_matrix) %in% proteo_aas)] <- ""
+
+rownames(fat_metabolite_cor_matrix)[which(rownames(fat_metabolite_cor_matrix) %in% proteo_aas)] <- "*"
+colnames(fat_metabolite_cor_matrix)[which(colnames(fat_metabolite_cor_matrix) %in% proteo_aas)] <- "*"
+
+## heatmap with rows and column names
+ht2 <- Heatmap(fat_metabolite_cor_matrix,
+        show_row_names = T,
+        show_column_names = T,
+        show_row_dend = F,
+        show_column_dend = F,
+        col=cor_colors)
+pdf("Display_Items/From_Figure5_script/fat_metabolite_metabolite_cors_heat_no_name_spear.pdf", width = 12, height = 12)
+ht2
+dev.off()
+```
+
+### Pearson raw
+```{r}
+metadata_fecal_mbx_fat <- metadata_fecal_mbx_raw %>% filter(`Diet Name`=="High Fat")
+#split to only columns that are the fecal metabolites
+metadata_fecal_mbx_fat_matrix <- metadata_fecal_mbx_fat[,108:889]
+
+#generate the correlation matrix
+fat_metabolite_cor_matrix <- cor(metadata_fecal_mbx_fat_matrix)
+#set NAs to 0
+fat_metabolite_cor_matrix[is.na(fat_metabolite_cor_matrix)] <- 0
+
+pdf("Display_Items/From_Figure5_script/fat_metabolite_metabolite_cors_hist_raw.pdf", width = 8, height = 5)
+hist(fat_metabolite_cor_matrix, xlab="Metabolite-Metabolite correlations within high fat", main="")
+dev.off()
+
+
+## heatmap with rows and column names
+ht1 <- Heatmap(fat_metabolite_cor_matrix,
+        show_row_names = T,
+        show_column_names = T,
+        show_row_dend = F,
+        show_column_dend = F,
+        col=cor_colors)
+pdf("Display_Items/From_Figure5_script/fat_metabolite_metabolite_cors_heat_raw.pdf", width = 120, height = 120)
+ht1
+dev.off()
+
+
+
+rownames(fat_metabolite_cor_matrix)[which(!rownames(fat_metabolite_cor_matrix) %in% proteo_aas)] <- ""
+colnames(fat_metabolite_cor_matrix)[which(!colnames(fat_metabolite_cor_matrix) %in% proteo_aas)] <- ""
+
+rownames(fat_metabolite_cor_matrix)[which(rownames(fat_metabolite_cor_matrix) %in% proteo_aas)] <- "*"
+colnames(fat_metabolite_cor_matrix)[which(colnames(fat_metabolite_cor_matrix) %in% proteo_aas)] <- "*"
+
+## heatmap with rows and column names
+ht2 <- Heatmap(fat_metabolite_cor_matrix,
+        show_row_names = T,
+        show_column_names = T,
+        show_row_dend = F,
+        show_column_dend = F,
+        col=cor_colors)
+pdf("Display_Items/From_Figure5_script/fat_metabolite_metabolite_cors_heat_no_name_raw.pdf", width = 12, height = 12)
+ht2
+dev.off()
+```
+
+
+## High Protein
+
+### Pearson
+```{r}
+metadata_fecal_mbx_protein <- metadata_fecal_mbx %>% filter(`Diet Name`=="High Protein")
+#split to only columns that are the fecal metabolites
+metadata_fecal_mbx_protein_matrix <- metadata_fecal_mbx_protein[,108:889]
+
+#generate the correlation matrix
+protein_metabolite_cor_matrix <- cor(metadata_fecal_mbx_protein_matrix)
+#set NAs to 0
+protein_metabolite_cor_matrix[is.na(protein_metabolite_cor_matrix)] <- 0
+
+pdf("Display_Items/From_Figure5_script/protein_metabolite_metabolite_cors_hist.pdf", width = 8, height = 5)
+hist(protein_metabolite_cor_matrix, xlab="Metabolite-Metabolite correlations within high fat", main="")
+dev.off()
+
+
+## heatmap with rows and column names
+ht1 <- Heatmap(protein_metabolite_cor_matrix,
+        show_row_names = T,
+        show_column_names = T,
+        show_row_dend = F,
+        show_column_dend = F,
+        col=cor_colors)
+pdf("Display_Items/From_Figure5_script//protein_metabolite_metabolite_cors_heat.pdf", width = 120, height = 120)
+ht1
+dev.off()
+
+
+
+rownames(protein_metabolite_cor_matrix)[which(!rownames(protein_metabolite_cor_matrix) %in% proteo_aas)] <- ""
+colnames(protein_metabolite_cor_matrix)[which(!colnames(protein_metabolite_cor_matrix) %in% proteo_aas)] <- ""
+
+rownames(protein_metabolite_cor_matrix)[which(rownames(protein_metabolite_cor_matrix) %in% proteo_aas)] <- "*"
+colnames(protein_metabolite_cor_matrix)[which(colnames(protein_metabolite_cor_matrix) %in% proteo_aas)] <- "*"
+
+## heatmap with rows and column names
+ht2 <- Heatmap(protein_metabolite_cor_matrix,
+        show_row_names = T,
+        show_column_names = T,
+        show_row_dend = F,
+        show_column_dend = F,
+        col=cor_colors)
+pdf("Display_Items/From_Figure5_script/protein_metabolite_metabolite_cors_heat_no_name.pdf", width = 12, height = 12)
+ht2
+dev.off()
+```
+
+### Spearman
+```{r}
+metadata_fecal_mbx_protein <- metadata_fecal_mbx %>% filter(`Diet Name`=="High Protein")
+#split to only columns that are the fecal metabolites
+metadata_fecal_mbx_protein_matrix <- metadata_fecal_mbx_protein[,108:889]
+
+#generate the correlation matrix
+protein_metabolite_cor_matrix <- cor(metadata_fecal_mbx_protein_matrix, method="spearman")
+#set NAs to 0
+protein_metabolite_cor_matrix[is.na(protein_metabolite_cor_matrix)] <- 0
+
+pdf("Display_Items/From_Figure5_script/protein_metabolite_metabolite_cors_hist_spear.pdf", width = 8, height = 5)
+hist(protein_metabolite_cor_matrix, xlab="Metabolite-Metabolite correlations within high fat", main="")
+dev.off()
+
+
+## heatmap with rows and column names
+ht1 <- Heatmap(protein_metabolite_cor_matrix,
+        show_row_names = T,
+        show_column_names = T,
+        show_row_dend = F,
+        show_column_dend = F,
+        col=cor_colors)
+pdf("Display_Items/From_Figure5_script/protein_metabolite_metabolite_cors_heat_spear.pdf", width = 120, height = 120)
+ht1
+dev.off()
+
+
+
+rownames(protein_metabolite_cor_matrix)[which(!rownames(protein_metabolite_cor_matrix) %in% proteo_aas)] <- ""
+colnames(protein_metabolite_cor_matrix)[which(!colnames(protein_metabolite_cor_matrix) %in% proteo_aas)] <- ""
+
+rownames(protein_metabolite_cor_matrix)[which(rownames(protein_metabolite_cor_matrix) %in% proteo_aas)] <- "*"
+colnames(protein_metabolite_cor_matrix)[which(colnames(protein_metabolite_cor_matrix) %in% proteo_aas)] <- "*"
+
+## heatmap with rows and column names
+ht2 <- Heatmap(protein_metabolite_cor_matrix,
+        show_row_names = T,
+        show_column_names = T,
+        show_row_dend = F,
+        show_column_dend = F,
+        col=cor_colors)
+pdf("Display_Items/From_Figure5_script/protein_metabolite_metabolite_cors_heat_no_name_spear.pdf", width = 12, height = 12)
+ht2
+dev.off()
+```
+
+## High Carb
+
+```{r}
+metadata_fecal_mbx_carb <- metadata_fecal_mbx %>% filter(`Diet Name`=="High Carb")
+#split to only columns that are the fecal metabolites
+metadata_fecal_mbx_carb_matrix <- metadata_fecal_mbx_carb[,108:889]
+
+#generate the correlation matrix
+carb_metabolite_cor_matrix <- cor(metadata_fecal_mbx_carb_matrix)
+#set NAs to 0
+carb_metabolite_cor_matrix[is.na(carb_metabolite_cor_matrix)] <- 0
+
+pdf("Display_Items/From_Figure5_script/Metabolite-metabolote_cors/carb_metabolite_metabolite_cors_hist.pdf", width = 8, height = 5)
+hist(carb_metabolite_cor_matrix, xlab="Metabolite-Metabolite correlations within high fat", main="")
+dev.off()
+
+
+## heatmap with rows and column names
+ht1 <- Heatmap(carb_metabolite_cor_matrix,
+        show_row_names = T,
+        show_column_names = T,
+        show_row_dend = F,
+        show_column_dend = F,
+        col=cor_colors)
+pdf("Display_Items/From_Figure5_script/carb_metabolite_metabolite_cors_heat.pdf", width = 120, height = 120)
+ht1
+dev.off()
+
+
+
+rownames(carb_metabolite_cor_matrix)[which(!rownames(carb_metabolite_cor_matrix) %in% proteo_aas)] <- ""
+colnames(carb_metabolite_cor_matrix)[which(!colnames(carb_metabolite_cor_matrix) %in% proteo_aas)] <- ""
+
+rownames(carb_metabolite_cor_matrix)[which(rownames(carb_metabolite_cor_matrix) %in% proteo_aas)] <- "*"
+colnames(carb_metabolite_cor_matrix)[which(colnames(carb_metabolite_cor_matrix) %in% proteo_aas)] <- "*"
+
+## heatmap with rows and column names
+ht2 <- Heatmap(carb_metabolite_cor_matrix,
+        show_row_names = T,
+        show_column_names = T,
+        show_row_dend = F,
+        show_column_dend = F,
+        col=cor_colors)
+pdf("Display_Items/From_Figure5_script/carb_metabolite_metabolite_cors_heat_no_name.pdf", width = 12, height = 12)
+ht2
+dev.off()
+```
+
+### Spearman
+
+```{r}
+metadata_fecal_mbx_carb <- metadata_fecal_mbx %>% filter(`Diet Name`=="High Carb")
+#split to only columns that are the fecal metabolites
+metadata_fecal_mbx_carb_matrix <- metadata_fecal_mbx_carb[,108:889]
+
+#generate the correlation matrix
+carb_metabolite_cor_matrix <- cor(metadata_fecal_mbx_carb_matrix, method="spearman")
+#set NAs to 0
+carb_metabolite_cor_matrix[is.na(carb_metabolite_cor_matrix)] <- 0
+
+pdf("Display_Items/From_Figure5_script/carb_metabolite_metabolite_cors_hist_spear.pdf", width = 8, height = 5)
+hist(carb_metabolite_cor_matrix, xlab="Metabolite-Metabolite correlations within high fat", main="")
+dev.off()
+
+
+## heatmap with rows and column names
+ht1 <- Heatmap(carb_metabolite_cor_matrix,
+        show_row_names = T,
+        show_column_names = T,
+        show_row_dend = F,
+        show_column_dend = F,
+        col=cor_colors)
+pdf("Display_Items/From_Figure5_script/carb_metabolite_metabolite_cors_heat_spear.pdf", width = 120, height = 120)
+ht1
+dev.off()
+
+
+
+rownames(carb_metabolite_cor_matrix)[which(!rownames(carb_metabolite_cor_matrix) %in% proteo_aas)] <- ""
+colnames(carb_metabolite_cor_matrix)[which(!colnames(carb_metabolite_cor_matrix) %in% proteo_aas)] <- ""
+
+rownames(carb_metabolite_cor_matrix)[which(rownames(carb_metabolite_cor_matrix) %in% proteo_aas)] <- "*"
+colnames(carb_metabolite_cor_matrix)[which(colnames(carb_metabolite_cor_matrix) %in% proteo_aas)] <- "*"
+
+## heatmap with rows and column names
+ht2 <- Heatmap(carb_metabolite_cor_matrix,
+        show_row_names = T,
+        show_column_names = T,
+        show_row_dend = F,
+        show_column_dend = F,
+        col=cor_colors)
+pdf("Display_Items/From_Figure5_script/carb_metabolite_metabolite_cors_heat_no_name_spear.pdf", width = 12, height = 12)
+ht2
+dev.off()
+```
+
+
+
+
+# Microbe-amino acid assocations
+
+Read in correlations from HALLA
+```{r}
+high_fat <- readRDS("HALLA/RES_FILT/Fat_res/Fat_merged_res.RDS")
+high_fat$p.values.x[which(is.na(high_fat$p.values.x))] <- 1
+high_fat$p.values.y[which(is.na(high_fat$p.values.y))] <- 1
+
+high_prot <- readRDS("HALLA/RES_FILT/Protein_res/protein_merged_res.RDS")
+high_prot$p.values.x[which(is.na(high_prot$p.values.x))] <- 1
+high_prot$p.values.y[which(is.na(high_prot$p.values.y))] <- 1
+
+#all assocations...
+old_names <- c('association.x', 'association.y', 'q.values.x', 'q.values.y')
+new_names <- c('association_High Carb', 'association_High Fat', 'q.values_High Carb', 'q.values_High Fat')
+
+
+only_prot <- high_prot %>% select(X_features, Y_features, association.y, q.values.y) %>%
+  rename_with(~ c("association_High Protein", "q.values_High Protein"), .cols = c(association.y, q.values.y))
+
+merged_data_cors <- high_fat %>% 
+  select(X_features, Y_features, association.x, association.y, q.values.x, q.values.y) %>%
+  rename_with(~ new_names, .cols = old_names) %>%
+  full_join(only_prot)
+```
+
+## Correlation scatter
+
+
+```{r}
+merged_data_cors_aa <- merged_data_cors %>% filter(Y_features %in% proteo_aas)
+```
+
+### Mean
+
+### Specific amino acids
+
+```{r}
+merged_data_cors_aa_plot <- merged_data_cors_aa
+#replace those that couldn't be calcuated with 0
+merged_data_cors_aa_plot$`association_High Protein`[is.na(merged_data_cors_aa_plot$`association_High Protein`)] <- 0
+merged_data_cors_aa_plot$`association_High Fat`[is.na(merged_data_cors_aa_plot$`association_High Fat`)] <- 0\
+merged_data_cors_aa_plot$`association_High Carb`[is.na(merged_data_cors_aa_plot$`association_High Carb`)] <- 0
+
+merged_data_cors_aa_plot$`q.values_High Protein`[is.na(merged_data_cors_aa_plot$`q.values_High Protein`)] <- 1
+merged_data_cors_aa_plot$`q.values_High Fat`[is.na(merged_data_cors_aa_plot$`q.values_High Fat`)] <- 1
+merged_data_cors_aa_plot$`q.values_High Carb`[is.na(merged_data_cors_aa_plot$`q.values_High Carb`)] <- 1
+
+merged_data_cors_aa_plot %>% ggplot(aes(x=`association_High Carb`, y=`association_High Protein`, alpha = `q.values_High Carb` < 0.1 | `q.values_High Protein` < 0.1)) +
+  geom_point() +
+  facet_wrap(~ Y_features) +
+  theme_bw() +
+  geom_hline(yintercept = 0) +
+  geom_vline(xintercept = 0)
+
+
+
+sig_filt <- merged_data_cors_aa %>% filter(`q.values_High Fat` < 0.1 | `q.values_High Protein` < 0.1)
+
+table(sig_filt$X_features) %>% data.frame() %>% arrange(Freq)
+
+high_fat_sig <- merged_data_cors_aa %>% filter(`q.values_High Fat` < 0.1)
+
+high_prot_sig <- merged_data_cors_aa %>% filter(`q.values_High Protein` < 0.1)
+
+high_fat_enrich <- table(high_fat_sig$X_features) %>% data.frame() %>% arrange(Freq) %>% filter(Freq > 10) %>% pull(Var1)
+
+high_prot_enrich <- table(high_prot_sig$X_features) %>% data.frame() %>% arrange(Freq) %>% filter(Freq  > 10) %>% pull(Var1)
+
+
+## 17 taxa total
+interesting_mics <- union(high_fat_enrich, high_prot_enrich)
+
+
+merged_data_cors_aa_plot$Microbes <- ifelse(merged_data_cors_aa_plot$X_features %in% interesting_mics, 
+                                            merged_data_cors_aa_plot$X_features, "Other")
+
+merged_data_cors_aa_plot$Microbes <- factor(merged_data_cors_aa_plot$Microbes, levels=c(interesting_mics, "Other"))
+
+my_colors <- c(
+  "#E41A1C", # Red
+  "#377EB8", # Blue
+  "#4DAF4A", # Green
+  "#984EA3", # Purple
+  "#FF7F00", # Orange
+  "#FFFF33", # Yellow
+  "#A65628", # Brown
+  "#F781BF", # Pink
+  "#66C2A5", # Teal
+  "#FC8D62", # Salmon
+  "#8DA0CB", # Lavender
+  "#E78AC3", # Magenta
+  "#A6D854", # Light green
+  "#FFD92F", # Gold
+  "#E5C494", # Tan
+  "#A6761D", # Light gray
+  "#1B9E77", # Dark teal
+  "#D95F02", # Dark orange
+  "#7570B3", # Indigo
+  "#E7298A",  # Pink-red
+  "#999999" # Grey
+)
+merged_data_cors_aa_plot %>% ggplot(aes(x=`association_High Fat`, y=`association_High Protein`, alpha = `q.values_High Carb` < 0.1 | `q.values_High Protein` < 0.1, color=Microbes)) +
+  geom_point(size=1.5) +
+  facet_wrap(~ Y_features) +
+  theme_bw() +
+  geom_hline(yintercept = 0) +
+  geom_vline(xintercept = 0) +
+  scale_color_manual(values=my_colors)
+
+ggsave("Display_Items/From_Figure5_script/microbe_cors_scatter_by_aa.pdf",
+       height=12, width=20)
+```
+
+### Mean
+```{r}
+mean_cors <- merged_data_cors_aa %>% group_by(X_features) %>% summarize(mean_carb=mean(`association_High Carb`), 
+                                                           mean_fat=mean(`association_High Fat`, na.rm = T),
+                                                           mean_protein=mean(`association_High Protein`, na.rm = T))
+
+mean_cors[is.na(mean_cors)] <- 0
+
+mean_cors$Microbe <- ifelse(mean_cors$X_features %in% interesting_mics, mean_cors$X_features, "Other")
+mean_cors$Microbe <- factor(mean_cors$Microbe, levels=c(interesting_mics, "Other"))
+
+range(mean_cors$mean_fat)
+range(mean_cors$mean_protein)
+
+mean_cors %>% ggplot(aes(x=mean_fat, y=mean_protein, color=Microbe)) +
+  xlim(-.65,.65) +
+  ylim(-.65,.65) +
+ # geom_rect(xmax = 0, xmin=1, ymax = 1, ymin=0, alpha=.005, fill="purple") +
+# geom_rect(xmax = -1, xmin=0, ymax = 0, ymin=1, alpha=.005, fill="steelblue") +
+#  geom_rect(xmax = -1, xmin=0, ymax = -1, ymin=0, alpha=.005, fill="green") +
+ # geom_rect(xmax = 1, xmin=0, ymax = -1, ymin=0, alpha=.005, fill="red") +
+  geom_point(size=3) +
+  theme_bw() +
+  xlab("Mean amino acid rho in high fat") +
+  ylab("Mean amino acid rho in high protein") +
+  scale_color_manual(values=my_colors) +
+  geom_vline(xintercept = 0) +
+  geom_hline(yintercept = 0)
+
+ggsave("Display_Items/From_Figure5_script/mean_cors_AA.pdf",
+       height=6, width=14)
+```
+
+
+# High Fat Specific Heatmap
+```{r}
+merged_data_cors_aa <- merged_data_cors %>% filter(Y_features %in% proteo_aas) %>%
+  arrange(desc(abs(`association_High Fat`)))
+
+## grab the first 10 microbes for the special plot (where top is considered the maximum |rho| of any AA)
+top_microbes_fat <- unique(merged_data_cors_aa$X_features)[1:10]
+
+#grab the top 50 to show in the heatmap
+top_filt_microbes <- unique(merged_data_cors_aa$X_features)[1:50]
+
+##only keep top 50 for plotting
+merged_data_fat_microbes <- merged_data_cors_aa %>% filter(X_features %in% top_filt_microbes) %>%
+  select(c(`association_High Fat`, X_features, Y_features))
+
+
+##turn into a correlation matrix
+cor_matrix_top_fat <- merged_data_fat_microbes %>% tidyr::pivot_wider(names_from=X_features, values_from=`association_High Fat`) %>% as.data.frame()
+
+
+rownames(cor_matrix_top_fat) <- cor_matrix_top_fat$Y_features
+
+
+cor_matrix_top_fat <- cor_matrix_top_fat[,-1]
+
+which(colnames(cor_matrix_top_fat) %in% top_microbes_fat)
+
+#only select the top 10 to show names of...
+column_labels_top <- c(top_microbes_fat, rep("", ncol(cor_matrix_top_fat)- 10))
+
+cor_fat_aas_heat <- Heatmap(cor_matrix_top_fat,
+                       show_column_names = T,
+                       column_labels = column_labels_top,
+                        row_names_gp = gpar(fontsize=12),
+                       column_names_rot = -50, 
+                       col = cor_colors)
+
+cor_fat_aas_heat
+
+pdf("Display_Items/From_Figure5_script/fat_microbe_cors_filt.pdf", width = 14, height = 7)
+cor_fat_aas_heat
+dev.off()
+
+
+## show all
+
+cor_fat_aas_heat_2 <- Heatmap(cor_matrix_top_fat,
+                       show_column_names = T,
+                       column_labels = colnames(cor_matrix_top_fat),
+                        row_names_gp = gpar(fontsize=12),
+                       column_names_rot = -50, 
+                       col = cor_colors)
+
+cor_fat_aas_heat_2
+
+pdf("Display_Items/From_Figure5_script/fat_microbe_cors.pdf", width = 14, height = 7)
+cor_fat_aas_heat_2
+dev.off()
+
+```
+
+# Protein Specific Heatmap
+
+```{r}
+merged_data_cors_aa <- merged_data_cors %>% filter(Y_features %in% proteo_aas) %>%
+  arrange(desc(abs(`association_High Protein`)))
+
+## grab the first 10 microbes
+top_microbes_protein <- unique(merged_data_cors_aa$X_features)[1:10]
+
+
+top_filt_microbes <- unique(merged_data_cors_aa$X_features)[1:50]
+
+merged_data_prot_microbes <- merged_data_cors_aa %>% filter(X_features %in% top_filt_microbes) %>%
+  select(c(`association_High Protein`, X_features, Y_features))
+
+cor_matrix_top_prot <- merged_data_prot_microbes %>% tidyr::pivot_wider(names_from=X_features, values_from=`association_High Protein`) %>% as.data.frame()
+
+
+rownames(cor_matrix_top_prot) <- cor_matrix_top_prot$Y_features
+
+
+cor_matrix_top_prot <- cor_matrix_top_prot[,-1]
+
+which(colnames(cor_matrix_top_prot) %in% top_microbes_protein)
+
+column_labels_top <- c(top_microbes_protein, rep("", ncol(cor_matrix_top_prot)- 10))
+
+cor_prot_aas_heat <- Heatmap(cor_matrix_top_prot,
+                       show_column_names = T,
+                       column_labels = column_labels_top,
+                        row_names_gp = gpar(fontsize=12),
+                       column_names_rot = -50,
+                       col=cor_colors)
+
+cor_prot_aas_heat
+
+pdf("Display_Items/From_Figure5_script/protein_microbe_cors_filt.pdf", width = 14, height = 7)
+cor_prot_aas_heat
+dev.off()
+
+cor_prot_aas_heat_2 <- Heatmap(cor_matrix_top_prot,
+                       show_column_names = T,
+                       column_labels = colnames(cor_matrix_top_prot),
+                        row_names_gp = gpar(fontsize=12),
+                       column_names_rot = -50,
+                       col=cor_colors)
+
+
+cor_prot_aas_heat_2
+
+pdf("Final_Figures/Amino_Acid_figures/Finished_Draft1/Microbe-metabolite/protein_microbe_cors.pdf", width = 14, height = 7)
+cor_prot_aas_heat_2
+dev.off()
+```
+
+# Carb Specific Correlations
+
+```{r}
+merged_data_cors_aa <- merged_data_cors %>% filter(Y_features %in% proteo_aas) %>%
+  arrange(desc(abs(`association_High Carb`)))
+
+## grab the first 10 microbes
+top_microbes_carb <- unique(merged_data_cors_aa$X_features)[1:10]
+
+
+top_filt_microbes <- unique(merged_data_cors_aa$X_features)[1:50]
+
+merged_data_carb_microbes <- merged_data_cors_aa %>% filter(X_features %in% top_filt_microbes) %>%
+  select(c(`association_High Carb`, X_features, Y_features))
+
+cor_matrix_top_carb <- merged_data_carb_microbes %>% tidyr::pivot_wider(names_from=X_features, values_from=`association_High Carb`) %>% as.data.frame()
+
+
+rownames(cor_matrix_top_carb) <- cor_matrix_top_carb$Y_features
+
+
+cor_matrix_top_carb <- cor_matrix_top_carb[,-1]
+
+which(colnames(cor_matrix_top_carb) %in% top_microbes_carb)
+
+column_labels_top <- c(top_microbes_carb, rep("", ncol(cor_matrix_top_carb)- 10))
+
+cor_carb_aas_heat <- Heatmap(cor_matrix_top_carb,
+                       show_column_names = T,
+                       column_labels = column_labels_top,
+                        row_names_gp = gpar(fontsize=12),
+                       column_names_rot = -50,
+                       col=cor_colors)
+
+cor_carb_aas_heat
+
+pdf("Display_Items/From_Figure5_script/carb_microbe_cors_filt.pdf", width = 14, height = 7)
+cor_carb_aas_heat
+dev.off()
+
+cor_carb_aas_heat_2 <- Heatmap(cor_matrix_top_carb,
+                       show_column_names = T,
+                       column_labels = colnames(cor_matrix_top_carb),
+                        row_names_gp = gpar(fontsize=12),
+                       column_names_rot = -50,
+                       col=cor_colors)
+
+cor_carb_aas_heat_2
+
+
+
+pdf("Display_Items/From_Figure5_script/carb_microbe_cors.pdf", width = 14, height = 7)
+cor_carb_aas_heat_2
+dev.off()
+
+```
+
+# Zoom in on specific microbes from each
+
+So I could do a specific story about one of the microbes of interest in this plot for panel C..
+
+```{r}
+metadata_fecal_mbx_bug <- metadata_fecal_mbx %>% left_join(bug)
+```
+
+## ammonia levels
+```{r}
+metadata_fat <- metadata %>% filter(Diet=="High Fat")
+metadata_prot <- metadata %>% filter(Diet=="High Protein")
+metadata_carb <- metadata %>% filter(Diet=="High Carb")
+
+bug_fat <- bug[metadata_fat$`Metagenomics Sample Number`, ]
+#remove those that are not detected
+rm_index_fat <- which(colSums(bug_fat[-245])==0)
+
+bug_fat <- bug_fat[,-c(rm_index_fat,245)]
+
+bug_prot <- bug[metadata_prot$`Metagenomics Sample Number`,]
+
+rm_index_prot <- which(colSums(bug_prot[-245])==0)
+bug_prot <- bug_prot[,-c(rm_index_prot,245)]
+
+bug_carb <- bug[metadata_carb$`Metagenomics Sample Number`,]
+rm_index_carb <- which(colSums(bug_carb[-245])==0)
+bug_carb <- bug_carb[,-c(rm_index_carb,245)]
+
+results_fat <- expand.grid(DF1_Column = names(bug_fat), DF2_Column = "Fecal Ammonia_mmol/gram", stringsAsFactors = F)
+
+fat_correlations_ammonia <- results_fat %>%
+  rowwise() %>%
+  mutate(test = list(cor.test(metadata_fat$`Fecal Ammonia_mmol/gram`, bug_fat[[DF1_Column]], 
+                              method="spearman", exact = F)),
+         estimate=test$estimate,
+         p_value=test$p.value,
+         Diet="High Fat",
+         pair=paste0(DF1_Column, DF2_Column, sep="_")) %>%
+  select(-test)
+
+fat_correlations_ammonia$q_value <- p.adjust(fat_correlations_ammonia$p_value, method = "fdr")
+
+### Protein correlations
+results_prot <- expand.grid(DF1_Column = names(bug_prot), DF2_Column = "Fecal Ammonia_mmol/gram", stringsAsFactors = F)
+
+prot_correlations_ammonia <- results_prot %>%
+  rowwise() %>%
+  mutate(test = list(cor.test(metadata_prot$`Fecal Ammonia_mmol/gram`, bug_prot[[DF1_Column]], 
+                              method="spearman", exact = F)),
+         estimate=test$estimate,
+         p_value=test$p.value,
+         Diet="High Protein",
+         pair=paste0(DF1_Column, DF2_Column, sep="_")) %>%
+  select(-test)
+
+prot_correlations_ammonia$q_value <- p.adjust(prot_correlations_ammonia$p_value, method="fdr")
+
+### Carb correlations
+results_carb <- expand.grid(DF1_Column = names(bug_carb), DF2_Column = "Fecal Ammonia_mmol/gram", stringsAsFactors = F)
+
+carb_correlations_ammonia <- results_carb %>%
+  rowwise() %>%
+  mutate(test = list(cor.test(metadata_carb$`Fecal Ammonia_mmol/gram`, bug_carb[[DF1_Column]], 
+                              method="spearman", exact = F)),
+         estimate=test$estimate,
+         p_value=test$p.value,
+         Diet="High Carb",
+         pair=paste0(DF1_Column, DF2_Column, sep="_")) %>%
+  select(-test)
+
+carb_correlations_ammonia$q_value <- p.adjust(carb_correlations_ammonia$p_value, method="fdr")
+
+
+merged_ammonia <- data.frame(rbind(fat_correlations_ammonia, prot_correlations_ammonia, carb_correlations_ammonia), check.names = FALSE, stringsAsFactors = F)
+```
+
+
+In almost all cases SGB15313 is the top of this os lets make a plot for it.
+## SGB15313
+
+```{r}
+SGB15313_cors <- merged_data_cors %>% filter(X_features == "Oscillospiraceae_SGB15313")
+
+metadata_fecal_mbx_bug %>% 
+  ggplot(aes(x=`Fecal Acetic acid (ug/g)`, y=Oscillospiraceae_SGB15313, color=Diet)) + 
+  geom_point() +
+  facet_grid(rows=vars(Diet), scales="free") +
+  scale_color_manual(values=col_diets) +
+  theme_bw()
+
+ggsave("Display_Items/From_Figure5_script/SGB15313_acetic_acid.pdf",
+       height=6, width=6)
+
+metadata_fecal_mbx_bug %>% 
+  ggplot(aes(x=`Fecal 2-Methylbutyric acid (ug/g)`, y=Oscillospiraceae_SGB15313, color=Diet)) + 
+  geom_point() +
+  facet_grid(rows=vars(Diet), scales="free") +
+  scale_color_manual(values=col_diets) +
+  theme_bw()
+
+ggsave("Display_Items/From_Figure5_script/SGB15313_2-Methylbutyric_acid.pdf",
+       height=6, width=6)
+
+metadata_fecal_mbx_bug %>% 
+  ggplot(aes(x=`Fecal Isobutyric acid (ug/g)`, y=Oscillospiraceae_SGB15313, color=Diet)) + 
+  geom_point() +
+  facet_grid(rows=vars(Diet), scales="free") +
+  scale_color_manual(values=col_diets) +
+  theme_bw()
+
+ggsave("Display_Items/From_Figure5_script/SGB15313_isobutyric_acid.pdf",
+       height=6, width=6)
+
+metadata_fecal_mbx_bug %>% 
+  ggplot(aes(x=`Fecal Isovaleric acid (ug/g)`, y=Oscillospiraceae_SGB15313, color=Diet)) + 
+  geom_point() +
+  facet_grid(rows=vars(Diet), scales="free") +
+  scale_color_manual(values=col_diets) +
+  theme_bw()
+
+ggsave("Display_Items/From_Figure5_script/SGB15313_isoval_acid.pdf",
+       height=6, width=6)
+
+metadata_fecal_mbx_bug %>%
+  ggplot(aes(x=`3-methyl-2-oxovalerate`, y=Oscillospiraceae_SGB15313, color=Diet)) + 
+  geom_point() +
+  facet_grid(rows=vars(Diet), scales="free") +
+  scale_color_manual(values=col_diets) +
+  theme_bw()
+
+
+
+ggsave("Display_Items/From_Figure5_script/SGB15313_3-methyl-2-oxovalerate.pdf",
+       height=6, width=6)
+
+metadata_fecal_mbx_bug %>%
+  ggplot(aes(x=isoleucine, y=Oscillospiraceae_SGB15313, color=Diet)) + 
+  geom_point() +
+  facet_grid(rows=vars(Diet), scales="free") +
+  scale_color_manual(values=col_diets) +
+  theme_bw()
+
+ggsave("Display_Items/From_Figure5_script/SGB15313_isoleucine.pdf",
+       height=6, width=6)
+
+metadata_fecal_mbx_bug %>%
+  ggplot(aes(x=leucine, y=Oscillospiraceae_SGB15313, color=Diet)) + 
+  geom_point() +
+  facet_grid(rows=vars(Diet), scales="free") +
+  scale_color_manual(values=col_diets) +
+  theme_bw()
+
+ggsave("Display_Items/From_Figure5_script/SGB15313_leucine.pdf",
+       height=6, width=6)
+
+
+metadata_fecal_mbx_bug %>%
+  ggplot(aes(x=valine, y=Oscillospiraceae_SGB15313, color=Diet)) + 
+  geom_point() +
+  facet_grid(rows=vars(Diet), scales="free") +
+  scale_color_manual(values=col_diets) +
+  theme_bw()
+
+ggsave("Display_Items/From_Figure5_script/SGB15313_valine.pdf",
+       height=6, width=6)
+
+metadata_fecal_mbx_bug %>%
+  ggplot(aes(x=`4-methyl-2-oxopentanoate`, y=Oscillospiraceae_SGB15313, color=Diet)) + 
+  geom_point() +
+  facet_grid(rows=vars(Diet), scales="free") +
+  scale_color_manual(values=col_diets) +
+  theme_bw()
+
+
+ggsave("Display_Items/From_Figure5_script/SGB15313_4-methyl-2-oxopentanoate.pdf",
+       height=6, width=6)
+
+
+metadata_fecal_mbx_bug %>%
+  ggplot(aes(x=`Fecal Propionic acid (ug/g)`, y=Oscillospiraceae_SGB15313, color=Diet)) + 
+  geom_point() +
+  facet_grid(rows=vars(Diet), scales="free") +
+  scale_color_manual(values=col_diets) +
+  theme_bw()
+ggsave("Display_Items/From_Figure5_script/SGB15313_propionic.pdf",
+       height=6, width=6)
+
+
+
+metadata_fecal_mbx_bug %>% filter(`Diet Name`!="High Carb") %>%
+  ggplot(aes(x=`Fecal Butyric acid (ug/g)`, y=Oscillospiraceae_SGB15313, color=Diet)) + 
+  geom_point() +
+  facet_grid(rows=vars(Diet), scales="free") +
+  scale_color_manual(values=col_diets) +
+  theme_bw()
+
+ggsave("Display_Items/From_Figure5_script/SGB15313_butyrate.pdf",
+       height=4, width=6)
+```
+
+### plot phylogenetic tree near it...
+```{r}
+library(ggtree)
+library(treeio)
+
+tree <- read.tree("Data/Taxonomic_profiles/mpa_vOct22_CHOCOPhlAnSGB_202212.nwk")
+which(tree$tip.label==15313)
+tree$Nnode
+tree_sub <- tree_subset(tree = tree, node = 43700, levels_back = 0)
+
+ggtree(tree_sub) + geom_tiplab() 
+
+## map labels to SGB names
+name_mapping <- read.table("Data/Taxonomic_profiles/mpa_vOct22_CHOCOPhlAnSGB_202403_species.txt", header=F, sep="\t")
+
+name_mapping$V1 <- gsub("SGB", "", name_mapping$V1)
+name_mapping$Sufix <-  gsub(".*s__", "", name_mapping$V2)
+name_mapping$prefix <- sapply(name_mapping$V2, 
+                            function(x) str_extract(x,
+                                                    "^(.*?)(?=(\\|g__GGB|\\|o__OFGB|\\|c__CFGB|\\|p__PFGB|\\|t__))"))
+
+
+name_mapping$prefix <- gsub('.*[kpcofgst]__', "", name_mapping$prefix)
+name_mapping$prefix[which(is.na(name_mapping$prefix))] <- ""
+name_mapping$SGB_name <- paste(name_mapping$prefix, name_mapping$Sufix, sep="_")
+name_mapping$SGB_name <- gsub("^_", "", name_mapping$SGB_name)
+
+
+tree_sub$tip.label <- name_mapping$SGB_name[match(tree_sub$tip.label, name_mapping$V1)]
+
+ggtree(tree_sub) + geom_tiplab() 
+
+ggsave("Display_Items/From_Figure5_script/SGB15313_phylotree.pdf",
+       height=4, width=6)
+```

@@ -1,0 +1,40 @@
+HAllA version:	0.8.20
+
+--Configuration parameters--
+  preprocess:
+    max freq thresh               : 1
+    transform funcs               : None
+    discretize bypass if possible : True
+    discretize func               : None
+    discretize num bins           : None
+  association:
+    pdist metric                  : spearman
+  hierarchy:
+    sim2dist set abs              : True
+    sim2dist func                 : None
+    linkage method                : average
+  permute:
+    iters                         : 1000
+    func                          : gpd
+    speedup                       : True
+  stats:
+    fdr alpha                     : 0.05
+    fdr method                    : fdr_bh
+    fnr thresh                    : 0.2
+    rank cluster                  : best
+  output:
+    dir                           : RES_FILT/Protein_res
+    verbose                       : True
+
+--Results--
+X shape (# features, # size)                                : (106, 35)
+Y shape (# features, # size)                                : (715, 35)
+Number of significant associations                          : 2267
+Number of significant clusters                              : 1189
+
+--Durations--
+Loading and preprocessing data                              : 0:00:00.112938
+Computing pairwise similarities, p-values, q-values         : 0:01:34.999388
+Performing hierarchical clustering                          : 0:02:43.752866
+Finding densely associated blocks                           : 0:00:02.155926
+Total execution time                                        : 0:04:21.021118

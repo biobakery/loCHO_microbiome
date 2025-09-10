@@ -1,0 +1,864 @@
+---
+title: "Figure2 - loCHO project"
+author: "Jacob T. Nearing PhD & Kelsey N. Thompson PhD"
+date: "2025-02-26"
+output: html_document
+---
+
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir = getwd())
+
+#source helper functions
+source("Utility_Scripts/helper_functions.R")
+source("Utility_Scripts/load_data_functions.R")
+
+library(ggplot2)
+library(vegan)
+library(grid)
+library(tidyverse)
+library(dplyr)
+library(scales)
+library(tibble)
+library(viridis)
+library(reshape2)
+library(data.table)
+library(cowplot)
+library(ggridges)
+library(gridExtra)
+```
+
+Load data
+```{r}
+bug <- load_taxa_data()
+bug_common <- bug[,is_common(t(bug))]
+  
+metadata <- load_meta_data(m4_data = bug)
+rownames(metadata) <- metadata$`Metagenomics Sample Number`
+
+metadata$diet <- metadata$`Diet Name`
+```
+
+
+```{r}
+# Diet Coloring -----------------------------------------------------------
+col_diets = c("High Carb" = "red3", "High Fat" = "darkslateblue", "High Protein" = "steelblue")
+
+# Bar colors for reference
+col = scale_fill_manual(values = c("#3288BD", "#5E4FA2", "#66A61E", "#FFED6F", "#FF0000", "#F46D43", "#E7298A", "#00008B", "#8DD3C7", "#FFFFB3", "#BEBADA", "#FB8072", "#80B1D3", "#B3DE69", "#FCCDE5", "#BC80BD", "#CCEBC5", "#9E0142", "#D53E4F", "#FDAE61", "#FEE08B", "#333333", "#66C2A5", "#3288BD", "#1B9E77", "#D95F02", "#7570B3", "#E6AB02", "#A6761D"))
+```
+
+Measure of amount of unknowns by food
+```{r unknown_analysis, echo= FALSE, warning = FALSE, message = FALSE, dpi=300, cache=TRUE, fig.height= 4, fig.width=7}
+uk = data.frame(bug$UNKNOWN)
+names(uk) = "unknown"
+row.names(uk) = row.names(bug)
+
+uk$dog = metadata$`Animal Name`
+uk$time = metadata$`Time Point` 
+uk$diet = metadata$`Diet Name`
+uk$order = metadata$`Diet Order Names`
+
+
+ggplot(uk, aes(y = unknown, x = diet, color = diet)) + geom_boxplot(lwd =2, outlier.shape = NA) + theme_classic(base_size = 16) + scale_color_manual(values = col_diets) + geom_dotplot(binaxis='y', stackdir='center', position=position_dodge(0.75), binwidth = 1) + facet_grid(~order, space = "free", scales = "free") + geom_line(aes(group = dog), color = "grey", alpha = 0.5) + ylab("Percent unknown") + xlab("Current Diet") + theme(legend.position = "NONE")
+
+ggsave("Display_Items/From_Figure2_script/Unknown_taxa_amount.pdf", 
+       height=6, width=18)
+
+ggsave("Display_Items/From_Figure2_script/Unknown_taxa_amount.png", 
+       height=6, width=18)
+```
+
+# Stacked barcharts of composition
+
+```{r barplot_individuals, echo= FALSE, warning = FALSE, message = FALSE, fig.height=8, fig.width=25, dpi=600, cache=TRUE}
+species = data.frame(t(bug), check.names = F)
+species_common = species[is_common(species), ]
+species_common = data.frame(t(species_common), check.names = F)
+
+who = names(sort(colMeans(species_common), decreasing = TRUE))[1:20]
+f = species_common[,names(species_common) %in% who]
+#Sort f by most abundant taxa
+f = f[order(colMeans(f), decreasing = T)]
+# adding in other taxa as a column for display
+f$Other = 100-rowSums(f)
+who = c(who, "Other")
+# now order samples (rows) by the most abundant taxon/Sort the x-axis by most abundant
+#f = f[order(f[1], decreasing = T ), ]
+#transpose f to add in the sample names for the melt
+f = data.frame(t(f), check.names = F)
+#head(f)
+#remove the X in front of the numbers in the colnames
+names(f) = gsub("^X", "", names(f))
+#head(f)
+# add Taxon column prior to melting
+f$Taxa <- row.names(f)
+# melt
+m = melt(f)
+#make the colors for 29 taxa + 1 "Other" (30 total), making the "Other" gray.
+m$dog = metadata[ match(m$variable, row.names(metadata)), "Animal Name" ]
+m$diet = metadata[ match(m$variable, row.names(metadata)), "Diet Name"]
+m$order = metadata[ match(m$variable, row.names(metadata)), "Diet Order Names"]
+m$time = metadata[ match(m$variable, row.names(metadata)), "Time Point"]
+
+
+col = scale_fill_manual(values = c("#3288BD", "#5E4FA2", "#66A61E", "#FFED6F", "#FF0000", "#F46D43", "#E7298A", "#00008B", "#8DD3C7", "#FFFFB3", "#BEBADA", "#FB8072", "#80B1D3", "#B3DE69", "#FCCDE5", "#BC80BD", "#CCEBC5", "#9E0142", "#D53E4F", "#FDAE61", "#CCCCCC"))
+m = subset(m, value > 0)
+
+p = ggplot(m, aes(time, fill = Taxa)) + 
+  geom_bar(aes(weight = value), position = position_fill(reverse = TRUE), color = "black") + 
+  theme_classic(base_size = 12) + col + xlab("Sample")+
+  ylab("Relative Abundance") +
+  theme(legend.text = element_text(face = "italic", size = 8)) +
+  guides(fill = guide_legend(ncol = 1, reverse=TRUE, keyheight = 0.55)) + scale_y_continuous(labels = percent_format()) + labs(title="") + theme(plot.title = element_text(size = 8)) + theme(axis.text.x = element_blank()) + theme(axis.ticks.x = element_blank()) + facet_wrap(~order + dog, scales = "free", ncol = 18) 
+p$data$Taxa = factor(p$data$Taxa, ordered = TRUE, levels = who)
+plot(p)
+
+ggsave("Display_Items/From_Figure2_script/Stacked_by_dogs.pdf", 
+       height=6, width=24)
+```
+
+```{r}
+p = ggplot(m, aes(dog, fill = Taxa)) + 
+  geom_bar(aes(weight = value), position = position_fill(reverse = TRUE), color = "black") + 
+  theme_classic(base_size = 12) + 
+  col +
+  xlab("Sample") + 
+  ylab("Relative Abundance") +
+  theme(legend.text = element_text(face = "italic", size = 8)) + 
+  guides(fill = guide_legend(ncol = 1, reverse=TRUE, keyheight = 0.55)) +
+  scale_y_continuous(labels = percent_format()) + labs(title="") +
+  theme(plot.title = element_text(size = 8)) +
+  theme(axis.text.x = element_blank()) +
+  theme(axis.ticks.x = element_blank()) + facet_grid(~diet + order, scales = "free", space = "free") 
+
+p$data$Taxa = factor(p$data$Taxa, ordered = TRUE, levels = who)
+plot(p)
+
+ggsave("Display_Items/From_Figure2_script/stacked_by_diet.pdf",
+       height=8, width=16)
+
+ggsave("Display_Items/From_Figure2_script/stacked_by_diet.png",
+       height=8, width=16)
+```
+
+
+# Maaslin3 taxon models
+```{r}
+phylum = load_taxa_data(level="Phylum", keep_unknown = F)
+class = load_taxa_data(level="Class", keep_unknown = F)
+order = load_taxa_data(level="Order", keep_unknown = F)
+family = load_taxa_data(level="Family", keep_unknown = F)
+genus = load_taxa_data(level="Genus", keep_unknown = F)
+species_s = load_taxa_data(level="Species", keep_unknown = F)
+```
+
+## SGBs
+```{r}
+library(maaslin3)
+
+set.seed(1234)
+metadata$diet = factor(metadata$diet, levels = c("High Carb", "High Protein", "High Fat"))
+metadata$age <- metadata$`age (yr)`
+metadata$animal <- metadata$`Animal Name`
+#SGB
+# fit_out <- maaslin3(input_data = species_common,
+#                     input_metadata = metadata,
+#                     output = 'diet_sgb_MaAsLin3',
+#                     formula = '~ age + Gender + diet + (1|animal)',
+#                     normalization = 'TSS',
+#                     transform = 'LOG',
+#                     augment = TRUE,
+#                     standardize = TRUE,
+#                     max_significance = 0.05,
+#                     median_comparison_abundance = TRUE,
+#                     median_comparison_prevalence = FALSE,
+#                     max_pngs = 250,
+#                     cores = 1)
+
+
+# fit_out <- maaslin3(input_data = species_common, 
+#                     input_metadata = metadata, 
+#                     output = 'dietorder_sgb_MaAsLin3', 
+#                     formula = '~ age + Gender + diet*order + (1|animal)', 
+#                     normalization = 'TSS', 
+#                     transform = 'LOG', 
+#                     augment = TRUE, 
+#                     standardize = TRUE, 
+#                     max_significance = 0.05, 
+#                     median_comparison_abundance = TRUE, 
+#                     median_comparison_prevalence = FALSE, 
+#                     max_pngs = 250, 
+#                     cores = 1)
+
+metadata$diet_sim = ifelse(metadata$diet == "High Carb", "High Carb", "Keto")
+
+# fit_out <- maaslin3(input_data = species_common, 
+#                     input_metadata = metadata, 
+#                     output = 'diet_simplified_sgb_MaAsLin3', 
+#                     formula = '~ age + Gender + diet_sim + (1|animal)', 
+#                     normalization = 'TSS', 
+#                     transform = 'LOG', 
+#                     augment = TRUE, 
+#                     standardize = TRUE, 
+#                     max_significance = 0.05, 
+#                     median_comparison_abundance = TRUE, 
+#                     median_comparison_prevalence = FALSE, 
+#                     max_pngs = 250, 
+#                     cores = 1)
+```
+
+## Species
+```{r}
+# fit_out <- maaslin3(input_data = species_s, 
+#                     input_metadata = metadata, 
+#                     output = 'diet_species_MaAsLin3', 
+#                     formula = '~ age + Gender + diet + (1|animal)', 
+#                     normalization = 'TSS', 
+#                     transform = 'LOG', 
+#                     augment = TRUE, 
+#                     standardize = TRUE, 
+#                     max_significance = 0.05, 
+#                     median_comparison_abundance = TRUE, 
+#                     median_comparison_prevalence = FALSE, 
+#                     max_pngs = 250, 
+#                     cores = 1)
+
+
+# fit_out <- maaslin3(input_data = species_s, 
+#                     input_metadata = metadata, 
+#                     output = 'dietorder_species_MaAsLin3', 
+#                     formula = '~ age + Gender + diet*order + (1|animal)', 
+#                     normalization = 'TSS', 
+#                     transform = 'LOG', 
+#                     augment = TRUE, 
+#                     standardize = TRUE, 
+#                     max_significance = 0.05, 
+#                     median_comparison_abundance = TRUE, 
+#                     median_comparison_prevalence = FALSE, 
+#                     max_pngs = 250, 
+#                     cores = 1)
+
+# fit_out <- maaslin3(input_data = species_s, 
+#                     input_metadata = metadata, 
+#                     output = 'diet_simplified_species_MaAsLin3', 
+#                     formula = '~ age + Gender + diet_sim + (1|animal)', 
+#                     normalization = 'TSS', 
+#                     transform = 'LOG', 
+#                     augment = TRUE, 
+#                     standardize = TRUE, 
+#                     max_significance = 0.05, 
+#                     median_comparison_abundance = TRUE, 
+#                     median_comparison_prevalence = FALSE, 
+#                     max_pngs = 250, 
+#                     cores = 1)
+```
+
+## Genus
+```{r}
+
+# fit_out <- maaslin3(input_data = genus, 
+#                     input_metadata = metadata, 
+#                     output = 'diet_genus_MaAsLin3', 
+#                     formula = '~ age + Gender + diet + (1|animal)', 
+#                     normalization = 'TSS', 
+#                     transform = 'LOG', 
+#                     augment = TRUE, 
+#                     standardize = TRUE, 
+#                     max_significance = 0.05, 
+#                     median_comparison_abundance = TRUE, 
+#                     median_comparison_prevalence = FALSE, 
+#                     max_pngs = 250, 
+#                     cores = 1)
+
+
+# fit_out <- maaslin3(input_data = genus, 
+#                     input_metadata = metadata, 
+#                     output = 'dietorder_genus_MaAsLin3', 
+#                     formula = '~ age + Gender + diet*order + (1|animal)', 
+#                     normalization = 'TSS', 
+#                     transform = 'LOG', 
+#                     augment = TRUE, 
+#                     standardize = TRUE,
+#                     max_significance = 0.05, 
+#                     median_comparison_abundance = TRUE, 
+#                     median_comparison_prevalence = FALSE, 
+#                     max_pngs = 250, 
+#                     cores = 1)
+
+# fit_out <- maaslin3(input_data = genus, 
+#                     input_metadata = metadata, 
+#                     output = 'diet_simplified_genus_MaAsLin3', 
+#                     formula = '~ age + Gender + diet_sim + (1|animal)', 
+#                     normalization = 'TSS', 
+#                     transform = 'LOG', 
+#                     augment = TRUE, 
+#                     standardize = TRUE, 
+#                     max_significance = 0.05, 
+#                     median_comparison_abundance = TRUE, 
+#                     median_comparison_prevalence = FALSE, 
+#                     max_pngs = 250, 
+#                     cores = 1)
+```
+
+## Family
+```{r}
+# fit_out <- maaslin3(input_data = family, 
+#                     input_metadata = metadata, 
+#                     output = 'diet_family_MaAsLin3', 
+#                     formula = '~ age + Gender + diet + (1|animal)', 
+#                     normalization = 'TSS', 
+#                     transform = 'LOG', 
+#                     augment = TRUE, 
+#                     standardize = TRUE, 
+#                     max_significance = 0.05, 
+#                     median_comparison_abundance = TRUE, 
+#                     median_comparison_prevalence = FALSE, 
+#                     max_pngs = 250, 
+#                     cores = 1)
+
+
+# fit_out <- maaslin3(input_data = family, 
+#                     input_metadata = metadata, 
+#                     output = 'dietorder_family_MaAsLin3', 
+#                     formula = '~ age + Gender + diet*order + (1|animal)', 
+#                     normalization = 'TSS', 
+#                     transform = 'LOG', 
+#                     augment = TRUE, 
+#                     standardize = TRUE, 
+#                     max_significance = 0.05, 
+#                     median_comparison_abundance = TRUE, 
+#                     median_comparison_prevalence = FALSE, 
+#                     max_pngs = 250, 
+#                     cores = 1)
+
+# fit_out <- maaslin3(input_data = family, 
+#                     input_metadata = metadata, 
+#                     output = 'diet_simplified_family_MaAsLin3', 
+#                     formula = '~ age + Gender + diet_sim + (1|animal)', 
+#                     normalization = 'TSS', 
+#                     transform = 'LOG', 
+#                     augment = TRUE, 
+#                     standardize = TRUE, 
+#                     max_significance = 0.05,
+#                     median_comparison_abundance = TRUE, 
+#                     median_comparison_prevalence = FALSE, 
+#                     max_pngs = 250, 
+#                     cores = 1)
+```
+
+## Order
+```{r}
+# fit_out <- maaslin3(input_data = order, 
+#                     input_metadata = metadata, 
+#                     output = 'diet_order_MaAsLin3',
+#                     formula = '~ age + Gender + diet + (1|animal)', 
+#                     normalization = 'TSS',
+#                     transform = 'LOG', 
+#                     augment = TRUE, 
+#                     standardize = TRUE, 
+#                     max_significance = 0.05, 
+#                     median_comparison_abundance = TRUE, 
+#                     median_comparison_prevalence = FALSE, 
+#                     max_pngs = 250, 
+#                     cores = 1)
+
+
+# fit_out <- maaslin3(input_data = order, 
+#                     input_metadata = metadata, 
+#                     output = 'dietorder_order_MaAsLin3', 
+#                     formula = '~ age + Gender + diet*order + (1|animal)', 
+#                     normalization = 'TSS', 
+#                     transform = 'LOG', 
+#                     augment = TRUE, 
+#                     standardize = TRUE, 
+#                     max_significance = 0.05, 
+#                     median_comparison_abundance = TRUE, 
+#                     median_comparison_prevalence = FALSE, 
+#                     max_pngs = 250, 
+#                     cores = 1)
+
+# fit_out <- maaslin3(input_data = order, 
+#                     input_metadata = metadata, 
+#                     output = 'diet_simplified_order_MaAsLin3', 
+#                     formula = '~ age + Gender + diet_sim + (1|animal)', 
+#                     normalization = 'TSS', 
+#                     transform = 'LOG', 
+#                     augment = TRUE, 
+#                     standardize = TRUE, 
+#                     max_significance = 0.05, 
+#                     median_comparison_abundance = TRUE, 
+#                     median_comparison_prevalence = FALSE, 
+#                     max_pngs = 250, 
+#                     cores = 1)
+```
+
+## Class
+```{r}
+# fit_out <- maaslin3(input_data = class, 
+#                     input_metadata = metadata, 
+#                     output = 'diet_class_MaAsLin3', 
+#                     formula = '~ age + Gender + diet + (1|animal)', 
+#                     normalization = 'TSS', 
+#                     transform = 'LOG', 
+#                     augment = TRUE, 
+#                     standardize = TRUE, 
+#                     max_significance = 0.05, 
+#                     median_comparison_abundance = TRUE, 
+#                     median_comparison_prevalence = FALSE, 
+#                     max_pngs = 250, 
+#                     cores = 1)
+
+
+# fit_out <- maaslin3(input_data = class, 
+#                     input_metadata = metadata, 
+#                     output = 'dietorder_class_MaAsLin3', 
+#                     formula = '~ age + Gender + diet*order + (1|animal)', 
+#                     normalization = 'TSS', 
+#                     transform = 'LOG', 
+#                     augment = TRUE, 
+#                     standardize = TRUE, 
+#                     max_significance = 0.05, 
+#                     median_comparison_abundance = TRUE, 
+#                     median_comparison_prevalence = FALSE, 
+#                     max_pngs = 250, 
+#                     cores = 1)
+
+# fit_out <- maaslin3(input_data = class, 
+#                     input_metadata = metadata, 
+#                     output = 'diet_simplified_class_MaAsLin3', 
+#                     formula = '~ age + Gender + diet_sim + (1|animal)', 
+#                     normalization = 'TSS', 
+#                     transform = 'LOG', 
+#                     augment = TRUE, 
+#                     standardize = TRUE, 
+#                     max_significance = 0.05, 
+#                     median_comparison_abundance = TRUE, 
+#                     median_comparison_prevalence = FALSE, 
+#                     max_pngs = 250, 
+#                     cores = 1)
+```
+
+## Phylum
+```{r}
+# fit_out <- maaslin3(input_data = phylum, 
+#                     input_metadata = metadata, 
+#                     output = 'diet_phylum_MaAsLin3', 
+#                     formula = '~ age + Gender + diet + (1|animal)', 
+#                     normalization = 'TSS', 
+#                     transform = 'LOG', 
+#                     augment = TRUE, 
+#                     standardize = TRUE, 
+#                     max_significance = 0.05, 
+#                     median_comparison_abundance = TRUE, 
+#                     median_comparison_prevalence = FALSE, 
+#                     max_pngs = 250, 
+#                     cores = 1)
+
+
+# fit_out <- maaslin3(input_data = phylum, 
+#                     input_metadata = metadata, 
+#                     output = 'dietorder_phylum_MaAsLin3', 
+#                     formula = '~ age + Gender + diet*order + (1|animal)', 
+#                     normalization = 'TSS', 
+#                     transform = 'LOG', 
+#                     augment = TRUE, 
+#                     standardize = TRUE, 
+#                     max_significance = 0.05, 
+#                     median_comparison_abundance = TRUE, 
+#                     median_comparison_prevalence = FALSE, 
+#                     max_pngs = 250, 
+#                     cores = 1)
+
+# fit_out <- maaslin3(input_data = phylum, 
+#                     input_metadata = metadata, 
+#                     output = 'diet_simplified_phylum_MaAsLin3', 
+#                     formula = '~ age + Gender + diet_sim + (1|animal)', 
+#                     normalization = 'TSS', 
+#                     transform = 'LOG', 
+#                     augment = TRUE, 
+#                     standardize = TRUE, 
+#                     max_significance = 0.05, 
+#                     median_comparison_abundance = TRUE, 
+#                     median_comparison_prevalence = FALSE, 
+#                     max_pngs = 250, 
+#                     cores = 1)
+```
+
+
+# Examination of Maaslin3 results
+
+
+## Checking how many general assocations between each
+Check how many associated with general LC intake
+
+We don't use this simplified model in the paper as checking the overlaps between the specific models is more precise to
+identify which taxon are relateed to general HC vs. LC
+```{r}
+# SGB_simple_diet <- read.table("diet_simplified_sgb_MaAsLin3/all_results_simplified.tsv", check.names = F, header=T)
+# 
+# #filter to diet value, only take models with 0.1
+# abundance_SGB <- SGB_simple_diet %>% filter(metadata=="diet_sim") %>% filter(qval_individual < 0.1) %>% filter(model=="abundance") %>% pull(feature) %>% unique()
+# 
+# abundance_SGB
+# 
+# 
+# prev_SGB <- SGB_simple_diet %>% filter(metadata=="diet_sim") %>% filter(qval_individual < 0.1) %>% filter(model=="prevalence") %>% pull(feature) %>% unique()
+# 
+# 
+# unique(c(prev_SGB, abundance_SGB))
+# 
+# setdiff(prev_SGB, abundance_SGB)
+# setdiff(abundance_SGB, prev_SGB)
+```
+
+
+Check diet specific assocaitions
+```{r}
+##read in SGB diet
+SGB_diet <- read.table("diet_sgb_MaAsLin3/all_results.tsv", check.names = F, header=T)
+
+# grab abundance protein significant
+protein_specific_abund <- SGB_diet %>% filter(metadata=="diet") %>% filter(value=="High Protein") %>% filter(qval_individual < 0.1) %>% filter(model=="abundance") %>% pull(feature) %>% unique()
+
+#grab prev. protein significant
+protein_specific_prev <- SGB_diet %>% filter(metadata=="diet") %>% filter(value=="High Protein") %>% filter(qval_individual < 0.1) %>% filter(model=="prevalence") %>% pull(feature) %>% unique()
+
+#grab fat abundance significant
+fat_specific_abund <- SGB_diet %>% filter(metadata=="diet") %>% filter(value=="High Fat") %>% filter(qval_individual < 0.1) %>% filter(model=="abundance") %>% pull(feature) %>% unique()
+
+#grab fat prev. significant
+fat_specific_prev <- SGB_diet %>% filter(metadata=="diet") %>% filter(value=="High Fat") %>% filter(qval_individual < 0.1) %>% filter(model=="prevalence") %>% pull(feature) %>% unique()
+```
+
+
+```{r}
+intersect(protein_specific_abund, fat_specific_abund)
+intersect(protein_specific_prev, fat_specific_prev)
+
+#get those specific to fat
+fat_abund_sig <- setdiff(fat_specific_abund, protein_specific_abund)
+fat_prev_sig <- setdiff(fat_specific_prev, protein_specific_prev)
+
+### check the taxonomy of these, to see if there is enrichment of a specific genera
+all_tax_fat <- union(fat_abund_sig, fat_prev_sig)
+SGB_fat <- gsub(".*_", "", all_tax_fat)
+SGB_fat
+
+bug4 <- read.csv(file = "Data/Taxonomic_profiles/metaphlan_4_0_6_Oct22_fixed_profiles.tsv", sep = '\t', header = T, check.names = F)
+
+bug4 <- bug4 %>% filter(grepl("t__",`# taxonomy`))
+bug4$`# taxonomy`
+
+fat_full_taxonomy <- sapply(SGB_fat, FUN=function(x) grep(x, bug4$`# taxonomy`))
+split_list <- strsplit(bug4$`# taxonomy`[fat_full_taxonomy], "\\|")
+df_fat_taxonomy <- as.data.frame(do.call(rbind, split_list), stringsAsFactors = F)
+
+table(df_fat_taxonomy$V5)
+#### 5 from lachno and 5 from clostridiaceae
+
+
+prot_abund_sig <- setdiff(protein_specific_abund, fat_specific_abund)
+prot_prev_sig <- setdiff(protein_specific_prev, fat_specific_prev)
+
+all_tax_prot <- union(prot_abund_sig, prot_prev_sig)
+##remove unknown
+all_tax_prot <- all_tax_prot[-16]
+## 30 again need to dfigure out what things increased most...
+SGB_prot <- gsub(".*_", "", all_tax_prot)
+SGB_prot[27] <- "SGB14985"
+
+prot_full_taxonomy <- sapply(SGB_prot, FUN=function(x) grep(x, bug4$`# taxonomy`))
+split_list <- strsplit(bug4$`# taxonomy`[prot_full_taxonomy], "\\|")
+df_prot_taxonomy <- as.data.frame(do.call(rbind, split_list), stringsAsFactors = F)
+
+table(df_prot_taxonomy$V5) 
+table(df_fat_taxonomy$V5)
+
+keep_fat <- gsub("t__", "", df_fat_taxonomy$V8)
+keep_fat_pat <- paste(keep_fat, collapse = "|")
+
+keep_prot <- gsub("t__", "", df_prot_taxonomy$V8)
+keep_prot_pat <- paste(keep_prot, collapse = "|")
+
+fat_specifc_res <- SGB_diet %>% filter(metadata=="diet") %>% filter(grepl(keep_fat_pat, feature))
+
+protein_specifc_res <- SGB_diet %>% filter(metadata=="diet") %>% filter(grepl(keep_prot_pat, feature))
+```
+
+
+## density subpanels
+
+```{r}
+
+#uses global variables which isn't great but should be fine for this...
+make_density_plot <- function(SGB){
+  taxon <- colnames(species_common)[grep(SGB, colnames(species_common))][1]
+  
+  cpho = data.frame(row.names(species_common), species_common[,taxon])
+  names(cpho) = c("Samples", "rel_abun")
+  cpho$diet = metadata[match(cpho$Samples, row.names(metadata)), "Diet Name"]
+  cpho$diet = factor(cpho$diet, levels = c("High Carb", "High Fat", "High Protein"))
+
+  #get number that are zero
+  zero_cpho = subset(cpho, rel_abun == 0)
+
+  #get number that are non-zero
+  nonzero_cpho = subset(cpho, rel_abun != 0)
+
+  #get non_zero in high carb and get median
+  tmp = subset(nonzero_cpho, diet == "High Carb")
+  median_value = median(tmp$rel_abun)
+
+  #normalize by median and take log
+  nonzero_cpho$rel_abun = log10(nonzero_cpho$rel_abun/median_value)
+
+
+  table1 = data.frame(table(cpho$diet))
+  #number of zero in each
+  table2 = data.frame(table(zero_cpho$diet))
+  zero_cpho_final = merge(table1, table2, by = "Var1")
+  names(zero_cpho_final) = c("diet", "total", "zeros")
+  zero_cpho_final$porportion = zero_cpho_final$zeros / zero_cpho_final$total *100
+
+  zeroplots_cpho_diet = ggplot(zero_cpho_final, aes(x = diet, y = porportion, fill = diet)) + 
+    geom_bar(position = position_dodge(0.1), stat = "identity") + 
+    theme_classic(base_size = 14)+ scale_fill_manual(values = col_diets) + 
+    ylab("Zeros (%)")  + theme(axis.text.x = element_blank(), axis.title.x = element_blank())  + 
+    theme(legend.position = "NONE")  + ylim(0, 100)
+
+
+  #png("cpho_denisty_diet.png", height = 3, width = 7, units = "in", res = 600)
+  density_cpho_diet = ggplot(nonzero_cpho, aes(x = rel_abun, y= diet, fill = diet)) + 
+    geom_density_ridges(alpha = 0.8, scale = 15, stroke = 2) + 
+    scale_fill_manual(values = col_diets) + xlim(-3, 3) + theme_classic(base_size = 14)+ 
+    labs(fill = "Diet", title = taxon) + ylab("Density") + 
+    xlab("log10(abundance relative to Prefeed)") + 
+    theme(plot.title = element_text(face = "italic")) + 
+    theme(axis.text.y = element_blank(), axis.ticks.y = element_blank(), 
+          plot.title = element_text(size = 14), axis.title.x = element_text(size =12)) 
+  #dev.off()
+  plot <- grid.arrange(zeroplots_cpho_diet, density_cpho_diet, ncol = 2, nrow = 1, widths = c(1.5, 4.5))
+  
+  return(plot)
+}
+
+```
+
+### HC assocations
+```{r}
+
+keep_taxa <- union(intersect(protein_specific_abund, fat_specific_abund), intersect(protein_specific_prev, fat_specific_prev))
+
+in_both <- SGB_diet %>% filter(metadata=="diet") %>% filter(feature %in% keep_taxa)
+
+keep_SGBs <- str_extract(keep_taxa, "SGB\\d+")
+keep_SGBs <- keep_SGBs[-9]
+```
+
+```{r}
+density_plots_HC <- list()
+
+for(i in unique(keep_SGBs)){
+  density_plots_HC[[i]] <- make_density_plot(i)
+}
+
+dir.create("Display_Items/From_Figure2_script/HC_density_plots")
+for(i in 1:length(density_plots_HC)){
+  filename <- paste0("Display_Items/From_Figure2_script/HC_density_plots/", keep_SGBs[i], "_density.pdf")
+  ggsave(filename, plot=density_plots_HC[[i]], width=10.5, height=3)
+}
+```
+
+### LCF specific
+
+```{r}
+density_plots_LCF <- list()
+
+for(i in unique(SGB_fat)){
+  density_plots_LCF[[i]] <- make_density_plot(i)
+}
+
+dir.create("Display_Items/From_Figure2_script/LCF_density_plots")
+for(i in 1:length(density_plots_LCF)){
+  filename <- paste0("Display_Items/From_Figure2_script/LCF_density_plots/", SGB_fat[i], "_density.pdf")
+  ggsave(filename, plot=density_plots_LCF[[i]], width=10.5, height=3)
+}
+```
+
+
+### LCP species
+
+```{r}
+density_plots_LCP <- list()
+
+for(i in unique(SGB_prot)){
+  density_plots_LCP[[i]] <- make_density_plot(i)
+}
+
+dir.create("Display_Items/From_Figure2_script/LCP_density_plots")
+for(i in 1:length(density_plots_LCP)){
+  filename <- paste0("Display_Items/From_Figure2_script/LCP_density_plots/", SGB_prot[i], "_density.pdf")
+  ggsave(filename, plot=density_plots_LCP[[i]], width=10.5, height=3)
+}
+
+```
+
+
+# Order interaction analysis
+
+```{r}
+SGB_diet_order <- read.table("dietorder_sgb_MaAsLin3/all_results.tsv", check.names = F, header=T)
+
+sig_interactions <- SGB_diet_order %>% filter(grepl(":", name)) %>% filter(qval_individual < 0.1)
+
+keep_microbes <- sig_interactions %>% pull(feature) %>% unique()
+
+plot_data <- SGB_diet_order %>% filter(grepl(":", name)) %>% filter(feature %in% keep_microbes)
+
+library(ggplot2)
+plot_data %>% ggplot(aes(x=coef, y=feature, color=model, alpha=qval_individual < 0.1)) + 
+  geom_point(size=3) +
+  theme_bw() +
+  ylab("Microbe") +
+  xlab("diet:order coefficient") +
+  facet_grid(~ value) +
+  scale_color_manual(values=c("#8B008B", "#008B8B"))
+
+ggsave("Display_Items/From_Figure2_script/Taxon_order_effects_supplemental.pdf",
+       height=6, width=12)
+
+```
+
+```{r}
+SGB_diet_order <- read.table("dietorder_sgb_MaAsLin3/all_results.tsv", check.names = F, header=T)
+
+sig_interactions <- SGB_diet_order %>% filter(metadata=="order") %>% filter(qval_individual < 0.1)
+
+keep_microbes <- sig_interactions %>% pull(feature) %>% unique()
+
+plot_data <- SGB_diet_order %>% filter(metadata=="order") %>% filter(feature %in% keep_microbes)
+
+library(ggplot2)
+plot_data %>% ggplot(aes(x=coef, y=feature, color=model, alpha=qval_individual < 0.1)) + 
+  geom_point(size=3) +
+  theme_bw() +
+  ylab("Microbe") +
+  xlab("diet:order coefficient") +
+  facet_grid(~ value) +
+  scale_color_manual(values=c("#8B008B", "#008B8B"))
+
+ggsave("Display_Items/From_Figure2_script/Taxon_order_only_supplemental.pdf",
+       height=6, width=12)
+
+```
+
+Highlight specific SGBs for plotting.
+# Order:diet plots
+```{r}
+bug$`Metagenomics Sample Number` <- rownames(bug)
+
+metadata_bug <- metadata %>% left_join(bug)
+```
+
+SGB105989
+```{r}
+metadata_bug %>% ggplot(aes(x=`Time Point`, y=Firmicutes_SGB105989, fill=diet, group = `Animal Name`)) + 
+  geom_point(shape=21, size=3) +
+  facet_grid(cols=vars(`Diet Order Names`)) +
+  theme_classic(base_size = 12) +
+  geom_path() +
+  scale_fill_manual(values=col_diets)
+
+
+ggsave("Display_Items/From_Figure2_script//SGB105989_order.pdf",
+       width=8, height=3.5)
+```
+
+SGB4794
+```{r}
+metadata_bug %>% ggplot(aes(x=`Time Point`, y=Blautia_hansenii_SGB4794, fill=diet, group = `Animal Name`)) + 
+  geom_point(shape=21, size=3) +
+  facet_grid(cols=vars(`Diet Order Names`)) +
+  theme_classic(base_size = 12) +
+  geom_path() +
+  scale_fill_manual(values=col_diets)
+
+
+ggsave("Display_Items/From_Figure2_script/SGB4794_order.pdf",
+       width=8, height=3.5)
+```
+
+SGB42251
+```{r}
+metadata_bug %>% ggplot(aes(x=`Time Point`, y=Erysipelotrichaceae_SGB42251, fill=diet, group = `Animal Name`)) + 
+  geom_point(shape=21, size=3) +
+  facet_grid(cols=vars(`Diet Order Names`)) +
+  theme_classic(base_size = 12) +
+  geom_path() +
+  scale_fill_manual(values=col_diets)
+
+
+ggsave("Display_Items/From_Figure2_script/SGB42251_order.pdf",
+       width=8, height=3.5)
+```
+
+SGB14737
+```{r}
+metadata_bug %>% ggplot(aes(x=`Time Point`, y=Collinsella_tanakaei_SGB14737, fill=diet, group = `Animal Name`)) + 
+  geom_point(shape=21, size=3) +
+  facet_grid(cols=vars(`Diet Order Names`)) +
+  theme_classic(base_size = 12) +
+  geom_path() +
+  scale_fill_manual(values=col_diets)
+
+
+ggsave("Display_Items/From_Figure2_script/SGB14737_order.pdf",
+       width=8, height=3.5)
+```
+
+
+SGB6783
+```{r}
+metadata_bug %>% ggplot(aes(x=`Time Point`, y=Candidatus_Catenibacterium_tridentinum_SGB6783, fill=diet, group = `Animal Name`)) + 
+  geom_point(shape=21, size=3) +
+  facet_grid(cols=vars(`Diet Order Names`)) +
+  theme_classic(base_size = 12) +
+  geom_path() +
+  scale_fill_manual(values=col_diets)
+
+
+ggsave("Display_Items/From_Figure2_script/SGB6783_order.pdf",
+       width=8, height=3.5)
+```
+
+SGB105119
+```{r}
+metadata_bug %>% ggplot(aes(x=`Time Point`, y=Atopobiaceae_unclassified_SGB105119_SGB105119, fill=diet, group = `Animal Name`)) + 
+  geom_point(shape=21, size=3) +
+  facet_grid(cols=vars(`Diet Order Names`)) +
+  theme_classic(base_size = 12) +
+  geom_path() +
+  scale_fill_manual(values=col_diets)
+
+
+ggsave("Display_Items/From_Figure2_script/SGB105119_order.pdf",
+       width=8, height=3.5)
+```
+
+SGB65708
+```{r}
+metadata_bug %>% ggplot(aes(x=`Time Point`, y=Prevotellaceae_SGB65708, fill=diet, group = `Animal Name`)) + 
+  geom_point(shape=21, size=3) +
+  facet_grid(cols=vars(`Diet Order Names`)) +
+  theme_classic(base_size = 12) +
+  geom_path() +
+  scale_fill_manual(values=col_diets)
+
+
+ggsave("Display_Items/From_Figure2_script/SGB65708_order.pdf",
+       width=8, height=3.5)
+
+```
