@@ -1,0 +1,1586 @@
+---
+title: "Figure4"
+author: "Jacob T. Nearing Ph.D."
+date: "2025-08-02"
+output: html_document
+---
+
+Figure 4 from loCHO manuscript
+
+Read in metabolite data is:
+1) median normalized within each metabolite
+2) 0 impute to minimum abundance observed in each metabolite class
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir = here::here())
+#source helper functions
+source(here::here("Utility_Scripts/helper_functions.R"))
+source(here::here("Utility_Scripts/load_data_functions.R"))
+
+library(maaslin3)
+library(ggplot2)
+library(patchwork)
+library(KEGGREST)
+library(ggpubr)
+library(ComplexHeatmap)
+library(pals)
+library(Maaslin2)
+library(ggrepel)
+library(scales)
+library(tidyr)
+```
+
+# Set up "Global Variables"
+```{r}
+#old colors
+#col_diets = c("High Carb" = "red3", "High Fat" = "darkslateblue", "High Protein" = "steelblue")
+
+col_diets = c("High Carb" = "#FF6700", "High Fat"="#56B4E9", "High Protein"="#009E73")
+
+
+default_anno_cols <- list(
+  diet=col_diets,
+  Diet=col_diets,
+  `Diet Order Names`=c(`High Protein --> High Fat`="purple",
+                       `High Fat --> High Protein`="orange"))
+
+```
+
+negative log10 transformation
+```{r}
+neg_log10_trans <- trans_new(
+  "neg_log10",
+  transform = function(x) -log10(x),
+  inverse = function(x) 10^(-x)
+)
+
+```
+
+#load in fecal mbx data
+```{r}
+bug <- load_taxa_data()
+bug_common <- bug[,is_common(t(bug))]
+  
+metadata <- load_meta_data(m4_data = bug)
+metadata$Diet <- metadata$`Diet Name`
+metadata$Age <- metadata$`age (yr)`
+metadata$DogID <- metadata$`Animal Name`
+metadata$dietOrder <- metadata$`Diet Order Names`
+rownames(metadata) <- metadata$`Metagenomics Sample Number`
+fecal_mbx <- load_fecalMbx_data(metadata)
+serum_mbx <- load_serumMbx_data(metadata)
+
+
+ec_data <- load_EC_data(metadata=metadata, strat = F, remove_ungroup = T)
+ec_strat <- load_EC_data(metadata=metadata, strat = T, remove_ungroup = T)
+
+fecal_mbx_common <- fecal_mbx[,is_common(t(fecal_mbx), abundance = 0)]
+
+bug_named <- bug
+bug_named$`Metagenomics Sample Number` <- rownames(bug_named)
+
+metadata_bug <- metadata %>% full_join(bug_named, by="Metagenomics Sample Number")
+
+
+```
+
+
+```{r}
+fecal_mbx$`Metagenomics Sample Number` <- rownames(fecal_mbx)
+fecal_mbx_rename <- fecal_mbx
+
+metadata_fecal_mbx <- metadata %>% left_join(fecal_mbx_rename)
+
+serum_mbx$`Metagenomics Sample Number` <- rownames(serum_mbx)
+serum_mbx_rename <- serum_mbx
+
+metadata_serum_mbx <- metadata %>% left_join(serum_mbx_rename)
+
+ec_data$`Metagenomics Sample Number` <- rownames(ec_data)
+metadata_ec <- metadata %>% left_join(ec_data)
+
+ec_strat$`Metagenomics Sample Number` <- rownames(ec_strat)
+metadata_ec_strat <- metadata %>% left_join(ec_strat)
+```
+
+# MSEA
+
+## Functions
+```{r}
+#function takes in a maaslin2 dataframe and extracts the t-statistics from it.
+extract_t_stat <- function(x){
+  
+  fat_res <- c()
+  protein_res <- c()
+  
+  message(length(x))
+  for(i in 1:length(x)){
+    message(i)
+    if(is.na(x[[i]])){
+      message("no model")
+      next
+    }
+    t_stats <- summary(x[[i]])[["coefficients"]][, "t value"]
+    
+    if("dietHigh Fat" %in% names(t_stats)){
+          fat_res[[names(x)[i]]] <- t_stats["dietHigh Fat"]
+    }else
+      fat_res[[names(x)[i]]] <- NA
+    
+    if("dietHigh Protein" %in% names(t_stats)){
+          protein_res[[names(x)[i]]] <- t_stats["dietHigh Protein"]
+    }else
+      protein_res[[names(x)[i]]] <- NA
+  }
+  
+  temp_list <- list(fat_res, protein_res)
+  df1 <- data.frame(do.call(rbind, temp_list[[1]]))
+  df1$metabolite <- rownames(df1)
+  
+  df2 <- data.frame(do.call(rbind, temp_list[[2]]))
+  df2$metabolite <- rownames(df2)
+  
+  merged_df <- left_join(df1, df2, by='metabolite')
+  
+  return(merged_df)
+}
+
+
+extract_t_stat_loCHO <- function(x){
+  
+  protein_res <- c()
+  
+  message(length(x))
+  for(i in 1:length(x)){
+    message(i)
+    if(is.na(x[[i]])){
+      message("no model")
+      next
+    }
+    t_stats <- summary(x[[i]])[["coefficients"]][, "t value"]
+    
+    if("DietHigh Protein" %in% names(t_stats)){
+          protein_res[[names(x)[i]]] <- t_stats["DietHigh Protein"]
+    }else
+      protein_res[[names(x)[i]]] <- NA
+  }
+  
+  temp_list <- list(protein_res)
+  df1 <- data.frame(do.call(rbind, temp_list[[1]]))
+  df1$metabolite <- rownames(df1)
+  
+  return(df1)
+}
+
+```
+
+## Load in metabolite annotations
+```{r}
+fecal_meta_annotations <- read_excel("Data/Metabolomic_profiles/HILL-0105-20MDTA CLIENT DATA TABLE (FECES).XLSX", skip=14, sheet = 2)
+
+fecal_meta_annotations <- fecal_meta_annotations[,c(2:13)]
+
+fecal_meta_annotations$name_maaslin2 <- gsub("[[:punct:]]", ".", fecal_meta_annotations$BIOCHEMICAL)
+fecal_meta_annotations$name_maaslin2 <- gsub("\ ", ".", fecal_meta_annotations$name_maaslin2)
+fecal_meta_annotations$name_maaslin2 <- tolower(fecal_meta_annotations$name_maaslin2)
+```
+
+```{r}
+metadata$age <- metadata$`age (yr)`
+metadata$diet <- metadata$`Diet Name`
+metadata$animal <- metadata$`Animal Name`
+```
+
+
+Run MaAslin2 to only get abundance component
+```{r}
+metadata$age <- metadata$`age (yr)`
+metadata$diet <- metadata$`Diet Name`
+metadata$animal <- metadata$`Animal Name`
+
+# fecal_maaslin2_run <- Maaslin2(input_data = fecal_mbx_common, 
+#                                input_metadata = metadata,          
+#                                output = "Maaslin2_results/fecal_metabolites", 
+#                               min_abundance = 0,
+#                               min_prevalence = 0,
+#                               transform = "NONE",
+#                               normalization = "NONE", 
+#                               fixed_effects = c("age", "Gender", "diet"),
+#                               random_effects = c("animal"),
+#                               reference=c("diet","High Carb"), save_models = TRUE)
+#saveRDS(fecal_maaslin2_run, "MaAsLin2_results/fecal_metabolites/rdata.RDS")
+
+```
+
+## Extract T-stats from Maas2
+
+```{r}
+fecal_maaslin2_run <- readRDS("Maaslin2_results/fecal_metabolites/rdata.RDS")
+
+#extract t_stats
+t_stats <- extract_t_stat(fecal_maaslin2_run$fits)
+
+#set up metabolite names as they are in maas2 results
+t_stats$metabolite_fix <- gsub("^X", "", t_stats$metabolite)
+t_stats$metabolite_fix <- tolower(t_stats$metabolite_fix)
+
+#missing metabolites
+#one metabolite name didn't get fixed right
+missing_metabolite <- which(is.na(match(t_stats$metabolite_fix, fecal_meta_annotations$name_maaslin2)))
+t_stats$metabolite_fix[780] <- "glutamine.degradant."
+
+
+fecal_meta_annotations$metabolite_fix <- fecal_meta_annotations$name_maaslin2
+
+#add t_stats to the fecal data annotations
+annotated_t_stats <- t_stats %>% left_join(fecal_meta_annotations, by="metabolite_fix")
+#set NA to metabolites that do not have an assocaited t statistic
+annotated_t_stats[annotated_t_stats==""] <- NA
+```
+
+
+## SUPER_PATHWAY MSEA
+
+We will filter out super pathway metabolites that have less than 8 
+```{r}
+#group data at super pathways and only keep those that have at least 8 in them
+filtered_final_df <- annotated_t_stats %>% group_by(SUPER_PATHWAY) %>% filter(n() > 8) %>% ungroup() %>% filter(!is.na(SUPER_PATHWAY))
+
+#compare ranks within a class to all outside ranks after filtering
+classes_to_test <- unique(filtered_final_df$SUPER_PATHWAY)
+#leaves 8 classes to test
+
+fat_res_p <- c()
+for(i in 1:length(classes_to_test)){
+  
+  tmp_class <- classes_to_test[[i]]
+  
+  #grab the t_stats in the class we are currently testing
+  class1 <- annotated_t_stats[which(annotated_t_stats$SUPER_PATHWAY==tmp_class), "dietHigh.Fat"]
+  #grab the t_stats for all other metabolites not in the class we are testing
+  class2 <- annotated_t_stats[which(annotated_t_stats$SUPER_PATHWAY!=tmp_class), "dietHigh.Fat"]
+  
+  #run a two sided wilcoxon test
+  tmp_test_res <- wilcox.test(class1, class2, alternative=c("two.sided"))
+  #save the p-value associated with the class
+  fat_res_p[[tmp_class]] <- tmp_test_res$p.value
+}
+
+#correct the p-values into q-values using BH
+fat_res_q <- p.adjust(fat_res_p, method="BH")
+
+
+## do the same above but for the t-stats assocaited with protein
+protein_res_p <- c()
+for(i in 1:length(classes_to_test)){
+  
+  tmp_class <- classes_to_test[[i]]
+  
+  class1 <- annotated_t_stats[which(annotated_t_stats$SUPER_PATHWAY==tmp_class), "dietHigh.Protein"]
+  class2 <- annotated_t_stats[which(annotated_t_stats$SUPER_PATHWAY!=tmp_class), "dietHigh.Protein"]
+  
+  tmp_test_res <- wilcox.test(class1, class2, alternative=c("two.sided"))
+  protein_res_p[[tmp_class]] <- tmp_test_res$p.value
+}
+
+protein_res_q <- p.adjust(protein_res_p, method="BH")
+```
+
+### Plot SUPER_PATHWAY
+```{r}
+#set everything as non-sig
+filtered_final_df$significant_fat <- FALSE
+filtered_final_df$significant_protein <- FALSE
+
+#assign significant.
+filtered_final_df[filtered_final_df$SUPER_PATHWAY %in% names(which(protein_res_q < 0.1)), "significant_protein"] <- TRUE
+
+#assign significant.
+filtered_final_df[filtered_final_df$SUPER_PATHWAY %in% names(which(fat_res_q < 0.1)), "significant_fat"] <- TRUE
+
+#grab medians of all t_stats for each diet (use these for plotting)
+median(annotated_t_stats$dietHigh.Fat)
+median(annotated_t_stats$dietHigh.Protein)
+
+fat_plot <- filtered_final_df %>% 
+  ggplot(aes(y=reorder(SUPER_PATHWAY, dietHigh.Fat, FUN=median), x=dietHigh.Fat, fill=significant_fat)) + 
+  geom_violin(alpha=0.5) + geom_boxplot(width=0.1, alpha=0) +
+  theme_bw(base_size = 16) + xlab("t-statistic (against High Carb)") + ylab("")+ geom_vline(xintercept = -1.26022) +
+  ggtitle("High Fat") + 
+  xlim(c(-22,18)) + 
+  scale_fill_manual(values=c("grey","red"), name="Significant against\n outside class metabolites")
+
+protein_plot <- filtered_final_df %>% 
+  ggplot(aes(y=reorder(SUPER_PATHWAY, dietHigh.Fat, FUN=median), x=dietHigh.Protein, fill=significant_protein)) + 
+  geom_violin(alpha=0.5) + geom_boxplot(width=0.1, alpha=0) +
+  theme_bw(base_size = 16) + xlab("t-statistic (against High Carb)") + ylab("")+ geom_vline(xintercept = -1.9824) +
+  ggtitle("High Protein") + 
+  xlim(c(-22,18)) + 
+  scale_fill_manual(values=c("grey", "red"), name="Significant against\n outside class metabolites")
+
+Superpathway_plot <- protein_plot + fat_plot + plot_layout(guides="collect", axes="collect")
+Superpathway_plot
+
+ggsave(filename = "Revisions/Display_Items/From_Figure4_script/superpathway_MSEA.pdf",
+       height=7, width=12)
+```
+
+## SUB_PATHWAY MSEA
+
+This is the plot we show in the main manuscript as its more useful
+```{r}
+#fix Purine labels
+annotated_t_stats$SUB_PATHWAY[grep("Purine", annotated_t_stats$SUB_PATHWAY)] <- "Purine Metabolism"
+
+filtered_final_df <- annotated_t_stats %>% group_by(SUB_PATHWAY) %>% filter(n() >= 8) %>% ungroup() %>% filter(!is.na(SUB_PATHWAY))
+#compare ranks within a class to all outside ranks
+
+
+
+
+classes_to_test <- unique(filtered_final_df$SUB_PATHWAY)
+# 35 classes to test
+
+fat_res_p <- c()
+for(i in 1:length(classes_to_test)){
+  
+  tmp_class <- classes_to_test[[i]]
+  
+  class1 <- annotated_t_stats[which(annotated_t_stats$SUB_PATHWAY==tmp_class), "dietHigh.Fat"]
+  class2 <- annotated_t_stats[which(annotated_t_stats$SUB_PATHWAY!=tmp_class), "dietHigh.Fat"]
+  
+  tmp_test_res <- wilcox.test(class1, class2, alternative=c("two.sided"))
+  fat_res_p[[tmp_class]] <- tmp_test_res$p.value
+}
+
+fat_res_q <- p.adjust(fat_res_p, method="BH")
+
+protein_res_p <- c()
+for(i in 1:length(classes_to_test)){
+  
+  tmp_class <- classes_to_test[[i]]
+  
+  class1 <- annotated_t_stats[which(annotated_t_stats$SUB_PATHWAY==tmp_class), "dietHigh.Protein"]
+  class2 <- annotated_t_stats[which(annotated_t_stats$SUB_PATHWAY!=tmp_class), "dietHigh.Protein"]
+  
+  tmp_test_res <- wilcox.test(class1, class2, alternative=c("two.sided"))
+  protein_res_p[[tmp_class]] <- tmp_test_res$p.value
+}
+
+protein_res_q <- p.adjust(protein_res_p, method="BH")
+
+```
+
+### SUB_PATHWAY plot
+
+```{r}
+filtered_final_df$significant_fat <- FALSE
+filtered_final_df$significant_protein <- FALSE
+
+filtered_final_df[filtered_final_df$SUB_PATHWAY %in% names(which(protein_res_q < 0.1)), "significant_protein"] <- TRUE
+filtered_final_df[filtered_final_df$SUB_PATHWAY %in% names(which(fat_res_q < 0.1)), "significant_fat"] <- TRUE
+
+median(annotated_t_stats$dietHigh.Fat)
+median(annotated_t_stats$dietHigh.Protein)
+
+fat_plot <- filtered_final_df %>% 
+  ggplot(aes(y=reorder(SUB_PATHWAY, dietHigh.Fat, FUN=median), x=dietHigh.Fat, fill=significant_fat)) +
+  geom_boxplot(width=0.5) +
+  theme_bw() + xlab("t-statistic") + ylab("")+ geom_vline(xintercept = -1.26022, linetype = "dotted") +
+  ggtitle("High Fat") + scale_fill_manual(values=c("grey","red"), name="Significant against\n outside class metabolites") + xlim(c(-21,21))
+
+protein_plot <- filtered_final_df %>% 
+  ggplot(aes(y=reorder(SUB_PATHWAY, dietHigh.Fat, FUN=median), x=dietHigh.Protein, fill=significant_protein)) +
+  geom_boxplot(width=0.5) +
+  theme_bw() + xlab("t-statistic") + ylab("")+ geom_vline(xintercept = -1.9824, linetype="dotted") +
+  ggtitle("High Protein") + scale_fill_manual(values=c("grey", "red"), name="Significant against\n outside class metabolites") + xlim(c(-21,21))
+
+
+subathway_plot <- protein_plot + fat_plot + plot_layout(guides="collect", axes="collect")
+subathway_plot
+
+ggsave(filename = "Revisions/Display_Items/From_Figure4_script/subpathway_MSEA.pdf",
+       height=7, width=12)
+
+
+## same plots as above but we remove things that were not significant in at least one of the classes
+
+fat_plot_sig <- filtered_final_df %>% filter(significant_fat | significant_protein) %>% 
+  ggplot(aes(y=reorder(SUB_PATHWAY, dietHigh.Fat, FUN=median), x=dietHigh.Fat, fill=significant_fat)) +
+  geom_boxplot(width=0.5) +
+  theme_bw() + xlab("t-statistic") + ylab("")+ geom_vline(xintercept = -1.26022, linetype = "dotted") +
+  ggtitle("High Fat") + 
+  scale_fill_manual(values=c("grey","red"), name="Significant against\n outside class metabolites") + 
+  xlim(c(-21,21)) +
+  theme(text=element_text(size=16))
+
+protein_plot_sig <- filtered_final_df %>% filter(significant_fat | significant_protein) %>%
+  ggplot(aes(y=reorder(SUB_PATHWAY, dietHigh.Fat, FUN=median), x=dietHigh.Protein, fill=significant_protein)) +
+  geom_boxplot(width=0.5) +
+  theme_bw() + xlab("t-statistic") + 
+  ylab("")+ geom_vline(xintercept = -1.9824, linetype="dotted") +
+  ggtitle("High Protein") + 
+  scale_fill_manual(values=c("grey", "red"), name="Significant against\n outside class metabolites") + 
+  xlim(c(-21,21)) +
+  theme(text=element_text(size=16))
+
+subathway_plot_sig <- protein_plot_sig + fat_plot_sig + plot_layout(guides="collect", axes="collect")
+subathway_plot_sig
+
+
+ggsave(filename = "Revisions/Display_Items/From_Figure4_script/subpathway_MSEA_sig.pdf",
+       height=7, width=12)
+```
+
+# Comparison between the two loCHO foods
+
+## Maaslin2 model
+```{r}
+metadata_loCHO <- metadata %>% filter(Diet=="High Fat" | Diet=="High Protein")
+
+fecal_mbx_loCHO <- fecal_mbx[metadata_loCHO$`Metagenomics Sample Number`,]
+
+rownames(metadata_loCHO) <- metadata_loCHO$`Metagenomics Sample Number`
+
+# fecal_mbx_loCHO_maas2 <- Maaslin2::Maaslin2(input_data=fecal_mbx_loCHO,
+#                    input_metadata=metadata_loCHO,
+#                    fixed_effects = c("age", "Gender", "Diet"),
+#                    random_effects = c("animal"),
+#                    normalization = "NONE",
+#                    transform = "NONE",
+#                    min_abundance = 0,
+#                    min_prevalence = 0,
+#                    output = "../Maaslin2_results/fecal_metabolites_loCHO_only/",
+#                    save_models = T)
+# 
+# saveRDS(fecal_mbx_loCHO_maas2, "../Maaslin2_results/fecal_metabolites_loCHO_only/all_data.RDS")
+```
+
+```{r}
+fecal_mbx_loCHO_maas2 <- readRDS("Maaslin2_results/fecal_metabolites_loCHO_only/all_data.RDS")
+
+t_stats_loCHO <- extract_t_stat_loCHO(fecal_mbx_loCHO_maas2$fits)
+
+#only keep those that were measured by metabolon
+t_stats_loCHO$metabolite_fix <- gsub("^X", "", t_stats_loCHO$metabolite)
+t_stats_loCHO$metabolite_fix <- tolower(t_stats_loCHO$metabolite_fix)
+
+#missing metabolites
+missing_metabolite <- which(is.na(match(t_stats_loCHO$metabolite_fix, fecal_meta_annotations$name_maaslin2)))
+
+t_stats_loCHO$metabolite_fix[779] <- "glutamine.degradant."
+fecal_meta_annotations$metabolite_fix <- fecal_meta_annotations$name_maaslin2
+
+annotated_t_stats_loCHO <- t_stats_loCHO %>% left_join(fecal_meta_annotations, by="metabolite_fix")
+
+annotated_t_stats_loCHO[annotated_t_stats_loCHO==""] <- NA
+
+```
+
+check which classes differ the most between them
+```{r}
+filtered_final_df_loCHO <- annotated_t_stats_loCHO %>% group_by(SUB_PATHWAY) %>% filter(n() > 8) %>% ungroup() %>% filter(!is.na(SUB_PATHWAY))
+#compare ranks within a class to all outside ranks
+
+
+classes_to_test <- unique(filtered_final_df_loCHO$SUB_PATHWAY)
+
+res_p <- c()
+for(i in 1:length(classes_to_test)){
+  
+  tmp_class <- classes_to_test[[i]]
+  
+  class1 <- annotated_t_stats_loCHO[which(annotated_t_stats_loCHO$SUB_PATHWAY==tmp_class), "DietHigh.Protein"]
+  class2 <- annotated_t_stats_loCHO[which(annotated_t_stats_loCHO$SUB_PATHWAY!=tmp_class), "DietHigh.Protein"]
+  
+  tmp_test_res <- wilcox.test(class1, class2, alternative=c("two.sided"))
+  res_p[[tmp_class]] <- tmp_test_res$p.value
+}
+
+res_q <- p.adjust(res_p, method="BH")
+
+filtered_final_df_loCHO$significant <- FALSE
+
+filtered_final_df_loCHO[filtered_final_df_loCHO$SUB_PATHWAY %in% names(which(res_q < 0.1)), "significant"] <- TRUE
+
+median(annotated_t_stats_loCHO$DietHigh.Protein)
+
+plot <- filtered_final_df_loCHO %>% 
+  ggplot(aes(y=reorder(SUB_PATHWAY, DietHigh.Protein, FUN=median), x=DietHigh.Protein, fill=significant)) +
+  geom_boxplot(width=0.5) +
+  theme_bw() + xlab("t-statistic") + ylab("")+ geom_vline(xintercept = -0.69803, linetype = "dotted") + xlim(c(-12,12)) + scale_fill_manual(values=c("grey","red"), name="Significant against\n outside class metabolites")
+plot
+
+
+ggsave(filename = "Revisions/Display_Items/From_Figure4_script/subpathway_MSEA_loCHO_only.pdf",
+       height=7, width=12)
+```
+
+
+
+# Highlight specific classes of metabolites
+
+## Fats
+
+```{r}
+monoacyls <- fecal_meta_annotations %>% filter(SUB_PATHWAY=="Monoacylglycerol") %>% pull(BIOCHEMICAL)
+
+pd <- metadata_fecal_mbx %>% select(c("Diet", "Diet Order Names", monoacyls)) %>% reshape2::melt(id.vars=c("Diet", "Diet Order Names"))
+
+pd %>% filter(Diet == "High Protein") %>% ggplot(aes(x=`Diet Order Names`, y=value, fill=`Diet Order Names`))+ geom_boxplot() +
+  facet_wrap(~ variable) +
+  ggpubr::geom_pwc()
+
+
+pd %>% filter(Diet == "High Fat") %>% ggplot(aes(x=`Diet Order Names`, y=value, fill=`Diet Order Names`))+ geom_boxplot() +
+  facet_wrap(~ variable) +
+  ggpubr::geom_pwc()
+```
+
+## Indoles
+
+Start with fecal indoles.
+
+```{r}
+indoles <- c("3-formylindole", "3-indoleglyoxylic acid", "5-hydroxyindoleacetate", "indolelactate", 
+  "indoleacetate", "indolepropionate", "indole", "indole-3-carboxylate", 
+  "indoleacetylglycine", "2-oxindole-3-acetate", "tryptophan", "kynurenine", "kynurenate", "tryptophan",
+  "indolin-2-one")
+
+
+### so plot will contain indole, two indole side chain cotent and then tryptophan itself
+
+indole_plot_data <- metadata_fecal_mbx %>% select(c("Diet", indoles)) %>% reshape2::melt(id.vars="Diet")
+
+indole_plot_data %>% ggplot(aes(x=Diet, y=value, fill=Diet)) + geom_boxplot() +
+  facet_wrap(~ variable, scales="free") +
+  scale_fill_manual(values=col_diets) +
+  ylab("Median normalized area under peak") +
+  xlab("") +
+  scale_y_continuous(expand = expansion(mult = c(0.05, 0.15))) +
+  theme_bw(base_size = 12)
+
+
+## we ended up using a table from Matt rather then this figure.
+ggsave(filename = "Revisions/Display_Items/From_Figure4_script/indole_supplemental_all.pdf",
+       height=7, width=12)
+
+
+
+## Subpanel for main figure
+indole_plot_data %>% filter(variable %in% c("indole", "tryptophan", "indolelactate", "indolepropionate", "indolin-2-one")) %>%
+  ggplot(aes(x=Diet, y=value, fill=Diet)) + geom_boxplot() +
+  ggpubr::geom_pwc(hide.ns=T, size=0.5, label.size = 4, label="p.adj.signif") +
+  facet_wrap(~ variable, scales="free") +
+  scale_fill_manual(values=col_diets) +
+  ylab("Median normalized area under peak") +
+  xlab("") +
+  scale_y_continuous(expand = expansion(mult = c(0.05, 0.15))) +
+  theme_bw(base_size = 16)
+
+ggsave(filename = "Revisions/Display_Items/From_Figure4_script/indole_sidepanel_Main_fig4.pdf",
+       height=7, width=12)
+```
+
+Serum...
+
+```{r}
+serum_indoles <- c("indolelactate", "indoleacetate", "indoleacrylate", "indolepropionate", "indolin-2-one", 
+                   "3-indoxyl sulfate", "indoxyl glucuronide")
+
+indole_plot_data <- metadata_serum_mbx %>% select(c("Diet", serum_indoles)) %>% reshape2::melt(id.vars="Diet")
+
+indole_plot_data %>% ggplot(aes(x=Diet, y=value, fill=Diet)) + geom_boxplot() +
+  facet_wrap(~ variable, scales="free") +
+  scale_fill_manual(values=col_diets) +
+  ylab("Median normalized area under peak") +
+  xlab("") +
+  scale_y_continuous(expand = expansion(mult = c(0.05, 0.15))) +
+  theme_bw(base_size = 12)
+
+ggsave(filename = "Revisions/Display_Items/From_Figure4_script/indole_serum.pdf",
+       height=7, width=12)
+
+```
+
+# SCFA
+
+```{r}
+fecal_SCFA <- c("Fecal 2-Methylbutyric acid (ug/g)", "Fecal Acetic acid (ug/g)", "Fecal Isobutyric acid (ug/g)", 
+                'Fecal Propionic acid (ug/g)', "Fecal Butyric acid (ug/g)", "Fecal Isovaleric acid (ug/g)")
+
+
+SCFA_plot_data <- metadata_fecal_mbx %>% select(c("Diet", fecal_SCFA)) %>% reshape2::melt(id.vars="Diet")
+
+SCFA_plot_data %>% ggplot(aes(x=Diet, y=value, fill=Diet)) + geom_boxplot() +
+  ggpubr::geom_pwc(hide.ns=T, size=0.5, label.size = 4, label="p.adj.signif") +
+  facet_wrap(~ variable, scales="free") +
+  scale_fill_manual(values=col_diets) +
+  ylab("Median normalized area under peak") +
+  xlab("") +
+  scale_y_continuous(expand = expansion(mult = c(0.05, 0.15))) +
+  theme_bw(base_size = 12)
+
+ggsave(file="Revisions/Display_Items/From_Figure4_script/SCFA_plots_main_fig4.pdf",
+       width=12, height = 7)
+```
+
+
+## Bile acids
+
+```{r}
+primary_bile_acid_metabolites <- annotated_t_stats %>% filter(SUB_PATHWAY %in% c("Primary Bile Acid Metabolism")) %>% pull(BIOCHEMICAL)
+
+primary_bile_acid_metabolites
+
+scnd_bile_acids <- annotated_t_stats %>% filter(SUB_PATHWAY %in% c("Secondary Bile Acid Metabolism")) %>% pull(BIOCHEMICAL)
+
+scnd_bile_acids
+bile_acids <- c(primary_bile_acid_metabolites, scnd_bile_acids)
+```
+
+### PCoA of secondary bile acids
+```{r}
+fecal_mbx_bile_Acids <- fecal_mbx[,scnd_bile_acids]
+
+fecal_bile_acids_man <- vegan::vegdist(log2(fecal_mbx_bile_Acids), method="manhattan")
+
+fecal_bile_acids_cmd <- vegan::capscale(fecal_bile_acids_man ~ 1)
+
+
+fecal_bile_Acids_pcoa <- data.frame(fecal_bile_acids_cmd$CA$u[metadata$`Metagenomics Sample Number`,])
+
+fecal_bile_Acids_pcoa$`Metagenomics Sample Number` <- rownames(fecal_bile_Acids_pcoa)
+
+fecal_bile_meta <- metadata %>% left_join(fecal_bile_Acids_pcoa)
+
+library(shadowtext)
+## add scores
+#data_wa = data.frame(vegan::wascores(fecal_bile_acids_cmd$CA$u[, 1:2], fecal_mbx_bile_Acids, expand=T))
+#data_wa_sub = data_wa[which(abs(data_wa$MDS1)>0.15 | abs(data_wa$MDS2)>0.15),]
+
+fecal_bile_meta %>% ggplot(aes(x=MDS1, y=MDS2)) + geom_point(pch=21, color="black", size=3, aes(fill=`Diet Name`)) +
+  scale_fill_manual(values=col_diets) +
+  #geom_shadowtext(data=data_wa_sub, aes(label = rownames(data_wa_sub), x=MDS1, y=MDS2), size=3) +
+  xlab("PC1 40.55%") +
+  ylab("PC2 23.10%") +
+  theme_classic(base_size = 16) +
+  xlim(-0.3, 0.3) +
+  ggtitle("Secondary Bile Acid Profile")
+
+
+ggsave(file="Revisions/Display_Items/From_Figure4_script/2nd_bile_acids_PCoA.pdf",
+       width=8, height = 6)
+
+ggsave(file="Revisions/Display_Items/From_Figure4_script/2nd_bile_acids_PCoA.png",
+       width=8, height = 6)
+
+## permanova
+
+vegan::adonis2(fecal_bile_acids_man ~ metadata$Diet, permutations = 999, by="margin")
+
+## what about pairwise comparisons...
+metadata_carb_fat <- metadata %>% filter(Diet=="High Carb" | Diet=="High Fat")
+
+
+fecal_bile_acid_carb_fat <- as.matrix(fecal_bile_acids_man)[metadata_carb_fat$`Metagenomics Sample Number`, metadata_carb_fat$`Metagenomics Sample Number`]
+
+vegan::adonis2(fecal_bile_acid_carb_fat ~ metadata_carb_fat$Diet)
+
+metadata_carb_prot <- metadata %>% filter(Diet=="High Carb" | Diet=="High Protein")
+fecal_bile_acid_carb_prot <- as.matrix(fecal_bile_acids_man)[metadata_carb_prot$`Metagenomics Sample Number`, metadata_carb_prot$`Metagenomics Sample Number`]
+
+
+
+vegan::adonis2(fecal_bile_acid_carb_prot ~ metadata_carb_prot$Diet)
+
+```
+
+
+
+
+# Maaslin3 like plot for 2nd bile acid and primary bile acid coefs.
+
+First need to run MaAsLin3 since we used two for MSEA
+```{r}
+# 
+# fecal_mbx_diet <- maaslin3::maaslin3(input_data = fecal_mbx[,-783],
+#                                input_metadata = metadata,
+#                                formula = ~ Age + Gender + Diet + (1|DogID),
+#                                output="diet_fecalMBX_MaAsLin3",
+#                                reference = c("Diet,High Carb"), save_models = T,
+#                                normalization = "NONE",
+#                                median_comparison_abundance = F,
+#                                median_comparison_prevalence = F,
+#                                warn_prevalence = F,
+#                                transform = "LOG")
+# saveRDS(fecal_mbx_diet, "diet_fecalMBX_MaAsLin3/all_data.RDS")
+```
+
+```{r}
+diet_metabolite_res <- read.table("diet_fecalMBX_MaAsLin3/all_results.tsv", 
+                                  sep="\t", check.names = F, header=T)
+
+bile_acids_punc <- make.names(c(bile_acids))
+
+bile_acid_func <- diet_metabolite_res %>% filter(is.na(error)) %>% filter(feature %in% bile_acids_punc) %>% mutate(primary_bile=ifelse(feature %in% make.names(primary_bile_acid_metabolites), TRUE, FALSE)) %>% filter(metadata=="Diet")
+
+max_significance <- 0.1
+
+scale_fill_gradient_limits <-
+        c(min(max_significance, 10 ^ floor(log10(
+            min(bile_acid_func$qval_individual, na.rm = T)
+        ))), 1)
+
+if (min(bile_acid_func$qval_individual, na.rm=T) < max_significance) {
+    scale_fill_gradient_breaks <-
+        c(10 ^ floor(log10(
+            min(bile_acid_func$qval_individual, na.rm=T)
+        )), max_significance, 1)
+} else {
+    scale_fill_gradient_breaks <- c(max_significance, 1)
+}
+
+if (min(bile_acid_func$qval_individual, na.rm=T) < max_significance) {
+    scale_fill_gradient_labels <-
+        c(paste0("1e", floor(log10(
+            min(bile_acid_func$qval_individual, na.rm=T)
+        ))),
+        paste0(max_significance),
+        "1")
+} else {
+    scale_fill_gradient_labels <- c(paste0(max_significance),
+                                    "1")
+}
+
+## reorder features by median qvalue...
+
+
+bile_acid_func$good_name <- c(bile_acids)[match(bile_acid_func$feature, make.names(c(bile_acids)))]
+
+median_qs <- bile_acid_func %>% group_by(good_name) %>% summarize(median_coef=median(coef)) %>% arrange(desc(median_coef))
+
+bile_acid_func %>% ggplot(aes(y=factor(good_name, levels=median_qs$good_name), x=coef, color=qval_individual)) + 
+  geom_point(size=3) +
+  facet_grid(cols=vars(value), rows=vars(primary_bile), scales = "free", space = "free",
+             labeller = as_labeller(c('FALSE'="Secondary bile acid", 'TRUE'="Primary bile acid", 
+                                      "High Fat"="High Fat", "High Protein"="High Protein"))) +
+  theme_bw() +
+  scale_color_gradient(
+            low = "#8B008B",
+            high = "white",
+            limits = scale_fill_gradient_limits,
+            breaks = scale_fill_gradient_breaks,
+            labels = scale_fill_gradient_labels,
+            transform = scales::pseudo_log_trans(sigma = 0.001),
+            name = bquote("Abundance" ~ P["FDR"])
+        ) +
+  ylab("Metabolite") +
+  xlab("Maaslin3 abundance coefficent")
+
+
+
+bile_acid_func %>% ggplot(aes(y=factor(good_name, levels=median_qs$good_name), x=coef, alpha=qval_individual < 0.1, color=value)) + 
+  geom_point(size=3) +
+  facet_grid(cols=vars(value), rows=vars(primary_bile), scales = "free", space = "free",
+             labeller = as_labeller(c('FALSE'="Secondary bile acid", 'TRUE'="Primary bile acid", 
+                                      "High Fat"="High Fat", "High Protein"="High Protein"))) +
+  theme_bw() +
+  ylab("Metabolite") +
+  xlab("Maaslin3 abundance coefficent") +
+  scale_color_manual(values=col_diets) +
+  geom_vline(xintercept = 0) +
+  theme(text = element_text(size=16))
+
+
+
+##should probably think about validating some of these...
+ggsave("Revisions/Display_Items/From_Figure4_script/Bile_Maaslin3_coefs_plots.pdf",
+       height=6, width=10)
+  
+increased_LCF <- bile_acid_func %>% filter(value=="High Fat") %>% filter(qval_individual < 0.1) %>% filter(coef > 0) %>% arrange(desc(coef)) %>% pull(feature)
+
+decreased_LCF <- bile_acid_func %>% filter(value=="High Protein") %>% filter(qval_individual < 0.1) %>% filter(coef < 0) %>% pull(feature)
+
+increased_LCP <- bile_acid_func %>% filter(value=="High Protein") %>% filter(qval_individual < 0.1) %>% filter(coef > 0) %>% pull(feature)
+
+decreased_LCP <- bile_acid_func %>% filter(value=="High Protein") %>% filter(qval_individual < 0.1) %>% filter(coef < 0) %>% pull(feature)
+
+intersect(increased_LCF, increased_LCP)
+intersect(increased_LCF, decreased_LCP)
+
+setdiff(increased_LCF, increased_LCP)
+
+setdiff(increased_LCP, increased_LCF)
+```
+
+#Check sugars
+```{r}
+carbs <- fecal_meta_annotations %>% filter(SUPER_PATHWAY=="Carbohydrate") %>% pull(BIOCHEMICAL)
+carbs <- make.names(carbs)
+
+carbs <- c(carbs, "myo.inositol")
+
+##remove amino sugars
+
+carb_mas_res <- diet_metabolite_res %>% filter(feature %in% carbs) %>% filter(is.na(error)) %>%
+  filter(metadata=="Diet")
+
+
+scale_fill_gradient_limits <-
+        c(min(max_significance, 10 ^ floor(log10(
+            min(carb_mas_res$qval_individual, na.rm = T)
+        ))), 1)
+
+if (min(carb_mas_res$qval_individual, na.rm=T) < max_significance) {
+    scale_fill_gradient_breaks <-
+        c(10 ^ floor(log10(
+            min(carb_mas_res$qval_individual, na.rm=T)
+        )), max_significance, 1)
+} else {
+    scale_fill_gradient_breaks <- c(max_significance, 1)
+}
+
+if (min(carb_mas_res$qval_individual, na.rm=T) < max_significance) {
+    scale_fill_gradient_labels <-
+        c(paste0("1e", floor(log10(
+            min(carb_mas_res$qval_individual, na.rm=T)
+        ))),
+        paste0(max_significance),
+        "1")
+} else {
+    scale_fill_gradient_labels <- c(paste0(max_significance),
+                                    "1")
+}
+
+carb_mas_res %>% ggplot(aes(y=factor(feature), x=coef, color=qval_individual)) + 
+  geom_point(size=3) +
+  facet_grid(cols=vars(value), space = "free",
+             labeller = as_labeller(c("High Fat"="LCF", "High Protein"="LCP"))) +
+  theme_bw() +
+  scale_color_gradient(
+            low = "#8B008B",
+            high = "white",
+            limits = scale_fill_gradient_limits,
+            breaks = scale_fill_gradient_breaks,
+            labels = scale_fill_gradient_labels,
+            transform = scales::pseudo_log_trans(sigma = 0.001),
+            name = bquote("Abundance" ~ P["FDR"])
+        ) +
+  ylab("Metabolite") +
+  xlab("Maaslin3 abundance coefficent")
+
+
+ggsave("Revisions/Display_Items/From_Figure4_script/carbohydrate_maaslin.pdf", width=8, height=3.5)
+
+ggsave("Revisions/Display_Items/From_Figure4_script/carbohydrate_maaslin.png", width=8, height=3.5)
+```
+
+
+#### Specific correlations
+
+BSH this deconjugates bile acids from glycine and taurine.
+Should look at who is contributing to this. Clostridium perfringens comes up as a major contributor
+
+```{r}
+metadata_ec %>% ggplot(aes(x=Diet, y=`3.5.1.24`, fill=Diet)) + 
+  geom_boxplot() +
+  geom_pwc() +
+  scale_fill_manual(values = col_diets) +
+  theme_bw() +
+  ylab("Bile Salt Hydrolase (RPKM)")
+
+ggsave("Revisions/Display_Items/From_Figure4_script/BSH_abundance_boxplot.pdf", width=3.5, height=5)
+
+
+keep_cols <- colnames(metadata_ec_strat)[grep("3.5.1.24", colnames(metadata_ec_strat))]
+
+plot_df <- metadata_ec_strat %>% select(c("Diet", "Metagenomics Sample Number", keep_cols)) %>% reshape2::melt(id.vars=c("Diet", "Metagenomics Sample Number")) %>% 
+  tidyr::separate(variable, into=c("EC", "Taxon"), sep="\\|") 
+
+
+taxa_keep <- plot_df %>% group_by(Taxon) %>% summarize(mean=mean(value)) %>% arrange(desc(mean)) %>% pull(Taxon) %>% head(n=10)
+
+plot_df$taxa_labs <- plot_df$Taxon
+plot_df$taxa_labs[which(!plot_df$taxa_labs %in% taxa_keep)] <- "Other"
+
+cols <- Polychrome::palette36.colors(n=11)
+cols <- unname(cols)
+
+
+plot_df %>% ggplot(aes(x=`Metagenomics Sample Number`, y=value, fill=taxa_labs)) + geom_col() +
+  facet_wrap(~ Diet, scales = "free_x") + scale_fill_manual(values=cols) +
+  ylab("Bile Salt Hydrolase RPKM") +
+  xlab("") +
+  theme(axis.text.x = element_blank()) +
+  labs(fill="Contributing Taxon") +
+  theme_bw()
+
+ggsave("Revisions/Display_Items/From_Figure4_script/BSH_contribution_bars.pdf", width=12, height=8)
+```
+
+Bai operon allows for BA dehydroxlation at C7. 
+baiG is transporter
+coa-ligation by baiB
+BaiA and BaiCD then oxidize BA
+BaiE is the rate limiting step -- its a 7alpha-dehydratase 
+  -- probably worth looking for this gene for C7 dehydroxylation
+  -- 7alpha 
+This makes deoxycholic acid
+
+Probably want to grab specific uniref here. 
+```{r}
+metadata_ec %>% ggplot(aes(x=Diet, y=`4.2.1.106`, fill=Diet)) + 
+  geom_boxplot() +
+  geom_pwc() +
+  scale_fill_manual(values = col_diets) +
+  theme_bw() +
+  ylab("7-alpha-dehydratase (RPKM)")
+
+ggsave("Revisions/Display_Items/From_Figure4_script/7AD_abundance.pdf", width=3.5, height=5)
+  
+
+
+
+keep_cols <- colnames(metadata_ec_strat)[grep("4.2.1.106", colnames(metadata_ec_strat))]
+
+plot_df <- metadata_ec_strat %>% select(c("Diet", "Metagenomics Sample Number", keep_cols)) %>% reshape2::melt(id.vars=c("Diet", "Metagenomics Sample Number")) %>% 
+  tidyr::separate(variable, into=c("EC", "Taxon"), sep="\\|") 
+
+
+taxa_keep <- plot_df %>% group_by(Taxon) %>% summarize(mean=mean(value)) %>% arrange(desc(mean)) %>% pull(Taxon) %>% head(n=10)
+
+plot_df$taxa_labs <- plot_df$Taxon
+plot_df$taxa_labs[which(!plot_df$taxa_labs %in% taxa_keep)] <- "Other"
+
+cols <- Polychrome::palette36.colors(n=11)
+cols <- unname(cols)
+
+
+plot_df %>% ggplot(aes(x=`Metagenomics Sample Number`, y=value, fill=taxa_labs)) + geom_col() +
+  facet_wrap(~ Diet, scales = "free_x") + scale_fill_manual(values=cols[-c(1:2)]) +
+  ylab("7-alpha-dehydratase RPKM") +
+  xlab("") +
+  theme(axis.text.x = element_blank()) +
+  labs(fill="Contributing Taxon") + theme_bw()
+
+ggsave("Revisions/Display_Items/From_Figure4_script/7AD_contribution.pdf", width=12, height=8)
+```
+
+#Taxon correlations for Bile Acids (not featured in paper)
+
+## Heatmap
+
+```{r}
+#load carb assocations
+High_carb_assocations <-read.table('HALLA/RES_FILT/Carb_res/all_associations.txt', header=T, sep = "\t", quote="",
+                                   comment.char="")
+colnames(High_carb_assocations) <- c("Microbe", "Metabolite", "Carb_estimate", "Carb_pvalue", "Carb_qvalue")
+
+#load fat assocations
+High_fat_assocations <-read.table('HALLA/RES_FILT/Fat_res/all_associations.txt', header=T, sep = "\t", quote="",
+                                   comment.char="")
+colnames(High_fat_assocations) <- c("Microbe", "Metabolite", "Fat_estimate", "Fat_pvalue", "Fat_qvalue")
+
+#load prot assocations
+High_prot_assocations <-read.table('HALLA/RES_FILT/Protein_res/all_associations.txt', header=T, sep = "\t", quote="",
+                                   comment.char="")
+colnames(High_prot_assocations) <- c("Microbe", "Metabolite", "Prot_estimate", "Prot_pvalue", "Prot_qvalue")
+##name columns correctly
+
+merged_cors <- High_fat_assocations %>% full_join(High_carb_assocations, by=c("Microbe", "Metabolite"))
+merged_cors <- merged_cors %>% full_join(High_prot_assocations, by=c("Microbe", "Metabolite"))
+
+##set qvalues to 1 if there is none
+merged_cors$Fat_qvalue[which(is.na(merged_cors$Fat_qvalue))] <- 1
+merged_cors$Prot_qvalue[which(is.na(merged_cors$Prot_qvalue))] <- 1
+merged_cors$Carb_qvalue[which(is.na(merged_cors$Carb_qvalue))] <- 1
+
+#set estimates to 0 if they are not identified.
+merged_cors$Fat_estimate[which(is.na(merged_cors$Fat_estimate))] <- 0
+merged_cors$Prot_estimate[which(is.na(merged_cors$Prot_estimate))] <- 0
+merged_cors$Carb_estimate[which(is.na(merged_cors$Carb_estimate))] <- 0
+
+bile_acid_cors <- merged_cors %>% filter(Metabolite %in% bile_acids)
+
+
+###filter out microbes that don't have at least one significant association
+keep_microbes <- bile_acid_cors %>% filter(Carb_qvalue < 0.1 | Fat_qvalue < 0.1 | Prot_qvalue < 0.1) %>% 
+  pull(Microbe) %>% unique()
+
+keep_metabolites <- bile_acid_cors %>% filter(Carb_qvalue < 0.1 | Fat_qvalue < 0.1 | Prot_qvalue < 0.1) %>% 
+  pull(Metabolite) %>% unique()
+
+
+bile_acid_cors_filt <- bile_acid_cors %>% filter(Microbe %in% keep_microbes) %>% filter(Metabolite %in% keep_metabolites) %>% 
+  select(Microbe, Metabolite, Carb_estimate, Carb_qvalue, Fat_estimate, Fat_qvalue, Prot_estimate, Prot_qvalue)
+
+## then we need to plot them into 3 tiled heatmaps
+bile_acid_cors_filt_melt <- bile_acid_cors_filt %>% reshape2::melt(id.vars=c('Microbe', 'Metabolite'))
+
+##grab estimates first
+bile_acid_cors_filt_melt_estimates <- bile_acid_cors_filt_melt %>% filter(grepl("_estimate", variable))
+bile_acid_cors_filt_melt_qvales <- bile_acid_cors_filt_melt %>% filter(grepl("_qvalue", variable))
+
+
+only_carb_cors <- bile_acid_cors_filt_melt_estimates %>% filter(variable=="Carb_estimate") %>%
+  tidyr::pivot_wider(names_from=Microbe, values_from =  value, id_cols = Metabolite) %>% data.frame()
+
+rownames(only_carb_cors) <- only_carb_cors$Metabolite 
+
+only_carb_cors <- only_carb_cors[,-1]
+
+###metabolite clustering
+only_carb_cors_dist <- dist(only_carb_cors)
+metabolite_carb_cluster <- hclust(only_carb_cors_dist)
+metabolite_carb_order <- metabolite_carb_cluster$order
+
+bug_carb_cluster <- hclust(dist(t(only_carb_cors)))
+bug_carb_order <- bug_carb_cluster$order
+
+only_carb_cors <- only_carb_cors[metabolite_carb_order, bug_carb_order]
+
+
+bile_acid_cors_filt_melt_estimates$Diet <- gsub("_.*", "", bile_acid_cors_filt_melt_estimates$variable)
+bile_acid_cors_filt_melt_qvales$Diet <- gsub("_.*", "", bile_acid_cors_filt_melt_qvales$variable)
+
+plot_df <- bile_acid_cors_filt_melt_estimates %>% left_join(bile_acid_cors_filt_melt_qvales, by=c("Diet", "Microbe", "Metabolite"))
+
+plot_df$Microbe <- factor(plot_df$Microbe, levels=colnames(only_carb_cors))
+
+plot_df$Metabolite <- factor(plot_df$Metabolite, levels=rownames(only_carb_cors))
+
+
+plot_df$Significant <- ifelse(plot_df$value.y < 0.1, "Yes", NA)
+
+##facet names
+facet_names <- c("Carb_estimate"="High Carb", "Fat_estimate"="High Fat", "Prot_estimate"="High Protein")
+##test it out
+plot_df %>% ggplot(aes(x=Microbe, y=Metabolite, fill=value.x)) + 
+  geom_tile() + facet_grid(rows=vars(variable.x), labeller = labeller(variable=facet_names)) +
+  geom_point(aes(shape=Significant), alpha=0.5) +
+  scale_fill_gradient2(limits=c(-1.01, 1.01), low="blue", high="red", mid="white", na.value="white" ,
+                       name="rho") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle=90, vjust = .5))
+
+#we can save
+##cluster based on high carb correlations
+##some are NA because they only in one dataset and they were not imputed to 0 because when you full join
+  ## if the metabolite is only found in one dataset and not the other it will not join the extra taxa
+  ## i think this is fine for this analysis.
+ggsave("Revisions/Display_Items/From_Figure4_script/bile_acid_microbe_cor_heat.pdf",
+       width=14, height=10)
+```
+
+
+#### Coef plot
+
+```{r}
+sig_cors_only <- bile_acid_cors %>% filter(Carb_qvalue < 0.1 | Fat_qvalue < 0.1 | Prot_qvalue < 0.1)
+```
+
+### Coefficent maaslin3 like plot
+```{r}
+##grab top 10 pairs for each diet
+Carb_pairs <- bile_acid_cors %>% arrange(Carb_pvalue) %>% 
+  slice(1:10) %>% 
+  mutate(Pairing=paste0(Microbe, " -- ", Metabolite))
+
+Prot_pairs <- bile_acid_cors %>% arrange(Prot_pvalue) %>% 
+  slice(1:10) %>%
+  mutate(Pairing=paste0(Microbe, " -- ", Metabolite))
+
+Fat_pairs <- bile_acid_cors %>% arrange(Fat_pvalue) %>% 
+  slice(1:10) %>%
+  mutate(Pairing=paste0(Microbe, " -- ", Metabolite))
+
+
+merged_pairs <- rbind(Carb_pairs, Prot_pairs, Fat_pairs)
+
+#need to add a scale for each color to this plot...
+#483D8B 
+max_significance <- 0.1
+            
+scale_fill_gradient_limits <-
+        c(min(max_significance, 10 ^ floor(log10(
+            min(merged_pairs$Fat_qvalue, na.rm = T)
+        ))), 1)
+
+if (min(merged_pairs$Fat_qvalue, na.rm=T) < max_significance) {
+    scale_fill_gradient_breaks <-
+        c(10 ^ floor(log10(
+            min(merged_pairs$Fat_qvalue, na.rm=T)
+        )), max_significance, 1)
+} else {
+    scale_fill_gradient_breaks <- c(max_significance, 1)
+}
+
+if (min(merged_pairs$Fat_qvalue, na.rm=T) < max_significance) {
+    scale_fill_gradient_labels <-
+        c(paste0("1e", floor(log10(
+            min(merged_pairs$Fat_qvalue, na.rm=T)
+        ))),
+        paste0(max_significance),
+        "1")
+} else {
+    scale_fill_gradient_labels <- c(paste0(max_significance),
+                                    "1")
+}
+
+merged_pairs %>% ggplot(aes(y=Microbe)) + 
+  ##Add carb data
+  geom_point(aes(x=Carb_estimate, color=Carb_qvalue), size=3) +
+  scale_color_gradient(high="white", low="red3", transform = scales::pseudo_log_trans(sigma = 0.001),
+                       limits=scale_fill_gradient_limits,
+                       breaks=scale_fill_gradient_breaks,
+                       labels=scale_fill_gradient_labels) +
+  ggnewscale::new_scale_color() +
+  geom_point(aes(x=Fat_estimate, color=Fat_qvalue), size=3) +
+  scale_color_gradient(high="white", low="darkslateblue",
+                       transform = scales::pseudo_log_trans(sigma = 0.001),
+                       limits=scale_fill_gradient_limits,
+                       breaks=scale_fill_gradient_breaks,
+                       labels=scale_fill_gradient_labels) +
+  ggnewscale::new_scale_color() +
+  geom_point(aes(x=Prot_estimate, color=Prot_qvalue), size=3) +
+  scale_color_gradient(high="white", low="steelblue",
+                       transform=scales::pseudo_log_trans(sigma=0.001),
+                       limits=scale_fill_gradient_limits,
+                       breaks=scale_fill_gradient_breaks,
+                       labels=scale_fill_gradient_labels) +
+  theme_bw() +
+  scale_alpha_ordinal(range=c(0.3, 1)) +
+  xlab("Rho") +
+  facet_grid(rows=vars(Metabolite), scales="free_y", space="free_y") +
+  theme(strip.text.y = element_text(angle=0))
+
+
+
+bile_acid_func %>% group_by(value) %>% summarize(total_sig=sum(qval_individual < 0.1))
+
+
+length(bile_acids)
+##keep carb_
+
+ggsave("Revisions/Display_Items/From_Figure4_script/Bile_acid_pairs_top_10.pdf",
+       width=10, height=9)
+
+
+merged_pairs %>% ggplot(aes(y=Microbe)) + 
+  geom_point(aes(x=Carb_estimate, alpha=Carb_qvalue < 0.1), size=3, color="red3") +
+  ggnewscale::new_scale(new_aes = "alpha") +
+  geom_point(aes(x=Fat_estimate, alpha=Fat_qvalue < 0.1), size=3, color="darkslateblue") +
+  ggnewscale::new_scale(new_aes = "alpha") +
+  geom_point(aes(x=Prot_estimate, alpha=Prot_qvalue < 0.1), size=3, color="steelblue") +
+  theme_bw() +
+  scale_alpha_ordinal(range=c(0.3, 1)) +
+  xlab("Rho") +
+  facet_grid(rows=vars(Metabolite), scales="free_y", space="free_y") +
+  theme(strip.text.y = element_text(angle=0))
+
+ggsave("Revisions/Display_Items/From_Figure4_script/Bile_acid_pairs_top_10_alpha.pdf",
+       width=10, height=9)
+```
+
+
+# Indoles
+
+## Specific indoles
+
+```{r}
+metadata_ec %>% ggplot(aes(x=Diet, y=`4.1.99.1`, fill=Diet)) + 
+  geom_boxplot() +
+  geom_pwc() +
+  scale_fill_manual(values = col_diets) +
+  theme_bw() +
+  ylab("Tryptophanase (RPKM)")
+
+ggsave("Revisions/Display_Items/From_Figure4_script/tryptophanase_abundance.pdf", width=3.5, height=5)
+
+
+keep_cols <- colnames(metadata_ec_strat)[grep("4.1.99.1\\|", colnames(metadata_ec_strat))]
+
+plot_df <- metadata_ec_strat %>% select(c("Diet", "Metagenomics Sample Number", keep_cols)) %>% reshape2::melt(id.vars=c("Diet", "Metagenomics Sample Number")) %>% 
+  tidyr::separate(variable, into=c("EC", "Taxon"), sep="\\|") 
+
+
+taxa_keep <- plot_df %>% group_by(Taxon) %>% summarize(mean=mean(value)) %>% arrange(desc(mean)) %>% pull(Taxon) %>% head(n=10)
+
+plot_df$taxa_labs <- plot_df$Taxon
+plot_df$taxa_labs[which(!plot_df$taxa_labs %in% taxa_keep)] <- "Other"
+
+cols <- Polychrome::palette36.colors(n=11)
+cols <- unname(cols)
+
+
+plot_df %>% ggplot(aes(x=`Metagenomics Sample Number`, y=value, fill=taxa_labs)) + geom_col() +
+  facet_wrap(~ Diet, scales = "free_x") + scale_fill_manual(values=cols[-c(1:2)]) +
+  ylab("Tryptophanase RPKM") +
+  xlab("") +
+  theme(axis.text.x = element_blank()) +
+  labs(fill="Contributing Taxon") + theme_bw()
+
+ggsave("Revisions/Display_Items/From_Figure4_script/tryptophanase_contribution.pdf", width=12, height=8)
+```
+
+not found:
+
+1.13.12.3
+2.6.1.27
+2.6.1.99
+
+1.4.3.2 --> increased in LC 
+
+
+
+```{r}
+metadata_ec %>% ggplot(aes(x=Diet, y=`1.4.3.2`, fill=Diet)) + 
+  geom_boxplot() +
+  geom_pwc() +
+  scale_fill_manual(values = col_diets) +
+  theme_bw() +
+  ylab("L-amino acid oxidase (RPKM)")
+
+
+ggsave("Revisions/Display_Items/From_Figure4_script/aa_oxi_abundance.pdf", width=3.5, height=5)
+
+keep_cols <- colnames(metadata_ec_strat)[grep("1.4.3.2\\|", colnames(metadata_ec_strat))]
+
+plot_df <- metadata_ec_strat %>% select(c("Diet", "Metagenomics Sample Number", keep_cols)) %>% reshape2::melt(id.vars=c("Diet", "Metagenomics Sample Number")) %>% 
+  tidyr::separate(variable, into=c("EC", "Taxon"), sep="\\|") 
+
+
+taxa_keep <- plot_df %>% group_by(Taxon) %>% summarize(mean=mean(value)) %>% arrange(desc(mean)) %>% pull(Taxon) %>% head(n=10)
+
+plot_df$taxa_labs <- plot_df$Taxon
+plot_df$taxa_labs[which(!plot_df$taxa_labs %in% taxa_keep)] <- "Other"
+
+cols <- Polychrome::palette36.colors(n=11)
+cols <- unname(cols)
+
+
+plot_df %>% ggplot(aes(x=`Metagenomics Sample Number`, y=value, fill=taxa_labs)) + geom_col() +
+  facet_wrap(~ Diet, scales = "free_x") + scale_fill_manual(values=cols[-c(1:2)]) +
+  ylab("L-amino acid oxidase RPKM") +
+  xlab("") +
+  theme(axis.text.x = element_blank()) +
+  labs(fill="Contributing Taxon") + theme_bw()
+
+ggsave("Revisions/Display_Items/From_Figure4_script/aa_oxi_contribution.pdf", width=12, height=8)
+```
+
+# Indole Correlations
+
+```{r}
+indoles <- c(
+  "2-oxindole-3-acetate",
+  '3-indoleglyoxylic acid',
+  '5-hydroxyindoleacetate',
+  "indole-3-carboxylate",
+  "indoleacetate",
+  "indoleacetylglycine",
+  "indolelactate",
+  "indolepropionate",
+  "oxindolylalanine",
+  "3-formylindole",
+  "indole",
+  "indolin-2-one",
+  "3-hydroxyindolin-2-one"
+)
+```
+
+Matt already created a nice table so we can use that instead of a million figures showing the data points
+
+What we need is a figure showing off if there are interseting correlations
+
+# Calculate average abundance of each bug
+
+```{r}
+bug_abundance_by_food <- metadata_bug[,c(4, 114:ncol(metadata_bug))] %>% group_by(`Diet Name`) %>% summarize_if(is.numeric, mean) %>% pivot_longer(cols=-`Diet Name`, names_to="variable", values_to="mean_value") 
+
+```
+
+# Microbe-indole correlations...
+
+```{r}
+indole_cors <- merged_cors %>% filter(Metabolite %in% indoles)
+
+indole_cors_sig <- indole_cors %>% filter(Carb_qvalue < 0.1 | Fat_qvalue < 0.1 | Prot_qvalue < 0.1)
+
+#60 taxon
+indole_cors_sig %>% pull(Microbe) %>% unique()
+
+# 12 of the 13 metabolites are highlighted here
+indole_cors_sig %>% pull(Metabolite) %>% unique()
+```
+
+## exploration by food group
+```{r}
+indole_cors_sig_fat <- indole_cors_sig %>% filter(Fat_qvalue < 0.1)
+indole_cors_sig_prot <- indole_cors_sig %>% filter(Prot_qvalue < 0.1)
+indole_cors_sig_carb <- indole_cors_sig %>% filter(Carb_qvalue < 0.1)
+
+table(indole_cors_sig_fat$Microbe) %>% sort() %>% tail(n=5)
+table(indole_cors_sig_fat$Metabolite) %>% sort() %>% tail(n=5)
+
+table(indole_cors_sig_prot$Microbe) %>% sort() %>% tail(n=5)
+table(indole_cors_sig_prot$Metabolite) %>% sort() %>% tail(n=5)
+
+
+table(indole_cors_sig_carb$Microbe) %>% sort() %>% tail(n=5)
+table(indole_cors_sig_carb$Metabolite) %>% sort() %>% tail(n=5)
+
+###oh thats actually really intereseting.... so in the two loCHO diets we get a lot of signigicant assocations with indolelactate but then in the carb we get indolin-2-one
+
+### indolelactate is down in low carb
+
+### indole/indolin-2-one is up in low carb
+
+### so then we can make a plot just focussing on those two metabolites
+```
+
+```{r}
+keep_microbes <- indole_cors_sig %>% filter(Metabolite %in% c("indolelactate", "indolin-2-one", "indoleacetate", "indole")) %>% pull(Microbe) %>% unique()
+
+filter_indole_df <- indole_cors %>% filter(Metabolite %in% c("indolelactate", "indolin-2-one", "indoleacetate", "indole")) %>%
+  filter(Microbe %in% keep_microbes)
+
+
+max_significance <- 0.1
+            
+scale_fill_gradient_limits <-
+        c(min(max_significance, 10 ^ floor(log10(
+            min(filter_indole_df$Prot_qvalue, na.rm = T)
+        ))), 1)
+
+if (min(filter_indole_df$Fat_qvalue, na.rm=T) < max_significance) {
+    scale_fill_gradient_breaks <-
+        c(10 ^ floor(log10(
+            min(filter_indole_df$Prot_qvalue, na.rm=T)
+        )), max_significance, 1)
+} else {
+    scale_fill_gradient_breaks <- c(max_significance, 1)
+}
+
+if (min(filter_indole_df$Fat_qvalue, na.rm=T) < max_significance) {
+    scale_fill_gradient_labels <-
+        c(paste0("1e", floor(log10(
+            min(filter_indole_df$Prot_qvalue, na.rm=T)
+        ))),
+        paste0(max_significance),
+        "1")
+} else {
+    scale_fill_gradient_labels <- c(paste0(max_significance),
+                                    "1")
+}
+
+## add qvalue colors based on each diet type
+filter_indole_df %>% ggplot(aes(y=reorder(Microbe, Fat_estimate))) +
+  geom_point(aes(x=Carb_estimate, fill=Carb_qvalue), size=3, shape=21) +
+  scale_fill_gradient(high="white", low="red3", transform = scales::pseudo_log_trans(sigma = 0.001),
+                       limits=scale_fill_gradient_limits,
+                       breaks=scale_fill_gradient_breaks,
+                       labels=scale_fill_gradient_labels) +
+  ggnewscale::new_scale_fill() +
+  geom_point(aes(x=Fat_estimate, fill=Fat_qvalue), size=3, shape=21) +
+  scale_fill_gradient(high="white", low="purple4", transform = scales::pseudo_log_trans(sigma = 0.001),
+                       limits=scale_fill_gradient_limits,
+                       breaks=scale_fill_gradient_breaks,
+                       labels=scale_fill_gradient_labels) +
+  ggnewscale::new_scale_fill() +
+  geom_point(aes(x=Prot_estimate, fill=Prot_qvalue), size=3, shape=21) +
+  scale_fill_gradient(high="white", low="orange", transform = scales::pseudo_log_trans(sigma = 0.001),
+                       limits=scale_fill_gradient_limits,
+                       breaks=scale_fill_gradient_breaks,
+                       labels=scale_fill_gradient_labels) +
+  geom_vline(xintercept = 0) +
+  facet_grid(~ Metabolite) +
+  theme_bw() +
+  xlab("Spearman Rho")
+
+
+## would be cool to cluster the bugs based on phylogeny as well...
+## could order the Y axis by taxonomy and or color their names by phylum as well...
+## should write a nice helper function to do this but we will just go with this for now...
+
+filter_indole_df$Metabolite <- factor(filter_indole_df$Metabolite, levels=c("indole", "indolin-2-one", "indolelactate", "indoleacetate"))
+
+filter_indole_df %>% ggplot(aes(y=reorder(Microbe, Fat_estimate))) +
+  geom_point(aes(x=Carb_estimate, alpha=Carb_qvalue < 0.1), size=3, shape=21, fill="#FF6700") +
+  ggnewscale::new_scale("alpha") +
+  geom_point(aes(x=Fat_estimate, alpha=Fat_qvalue < 0.1), size=3, shape=21, fill="#56B4E9") +
+  ggnewscale::new_scale("alpha") +
+  geom_point(aes(x=Prot_estimate, alpha=Prot_qvalue < 0.1), size=3, shape=21, fill="#009E73") +
+  geom_vline(xintercept = 0) +
+  facet_grid(~ Metabolite) +
+  theme_bw(base_size = 12) +
+  xlab("Spearman Rho") +
+  ylab("Microbe")
+
+
+ggsave("Revisions/Display_Items/From_Figure4_script/microbe_correlation_indoles.pdf",
+       height=8, width=12)
+
+
+ggsave("Revisions/Display_Items/From_Figure4_script/microbe_correlation_indoles.png",
+       height=8, width=12)
+
+
+## add another row with mean abundances
+##get mean abundances of each but in
+microbes_in_order <- reorder(filter_indole_df$Microbe, filter_indole_df$Fat_estimate)
+unique(microbes_in_order)
+
+
+
+bug_abundance_by_food %>% filter(variable %in% microbes_in_order) %>% 
+  mutate(variable2 = factor(variable, levels=levels(microbes_in_order))) %>%
+  ggplot(aes(y=variable2, x=mean_value, color=`Diet Name`)) + geom_point() +
+  scale_color_manual(values=col_diets) +
+  xlab("Mean Rel. Abundance") +
+  theme_bw(base_size = 12) +
+  ylab("Microbe")
+
+ggsave("Revisions/Display_Items/From_Figure4_script/bug_abundance_indoles.png", height = 8, width=8)
+ggsave("Revisions/Display_Items/From_Figure4_script/bug_abundance_indoles.pdf", height = 8, width=8)
+
+
+bug_abundance_by_food %>% filter(variable %in% microbes_in_order) %>% 
+  mutate(variable2 = factor(variable, levels=levels(microbes_in_order))) %>%
+  ggplot(aes(y=variable2, x=mean_value, color=`Diet Name`)) + geom_point() +
+  scale_color_manual(values=col_diets) +
+  xlab("Mean Rel. Abundance") +
+  theme_bw(base_size = 12) +
+  scale_x_log10() +
+  ylab("Microbe")
+ 
+ggsave("Revisions/Display_Items/From_Figure4_script/bug_abundance_indoles_log10.png", height = 8, width=8)
+ggsave("Revisions/Display_Items/From_Figure4_script/bug_abundance_indoles_log10.pdf", height = 8, width=8)
+```
+
+
+
+# SCFA Correlations
+
+```{r}
+SCFA <- c("Fecal 2-Methylbutyric acid (ug/g)",
+          "Fecal Acetic acid (ug/g)",
+          "Fecal Butyric acid (ug/g)",
+          "Fecal Isobutyric acid (ug/g)",
+          "Fecal Isovaleric acid (ug/g)",
+          "Fecal Propionic acid (ug/g)")
+```
+
+
+# calculate microbe - SCFA correlates
+
+
+```{r}
+metadata_fat <- metadata %>% filter(Diet=="High Fat")
+metadata_prot <- metadata %>% filter(Diet=="High Protein")
+metadata_carb <- metadata %>% filter(Diet=="High Carb")
+
+bug_fat <- bug[metadata_fat$`Metagenomics Sample Number`, ]
+#remove those that are not detected
+rm_index_fat <- which(colSums(bug_fat)==0)
+bug_fat <- bug_fat[,-rm_index_fat]
+
+bug_prot <- bug[metadata_prot$`Metagenomics Sample Number`,]
+rm_index_prot <- which(colSums(bug_prot)==0)
+bug_prot <- bug_prot[,-rm_index_prot]
+
+bug_carb <- bug[metadata_carb$`Metagenomics Sample Number`,]
+rm_index_carb <- which(colSums(bug_carb)==0)
+bug_carb <- bug_carb[,-rm_index_carb]
+
+### Fat correlations
+metadata_fat_SCFA <- metadata_fat[,SCFA]
+results_fat <- expand.grid(DF1_Column = names(bug_fat), DF2_Column = names(metadata_fat_SCFA), stringsAsFactors = F)
+
+fat_correlations <- results_fat %>%
+  rowwise() %>%
+  mutate(test = list(cor.test(metadata_fat_SCFA[[DF2_Column]], bug_fat[[DF1_Column]], method="spearman", exact = F)),
+         estimate=test$estimate,
+         p_value=test$p.value,
+         Diet="High Fat",
+         pair=paste0(DF1_Column, DF2_Column, sep="_")) %>%
+  select(-test)
+
+fat_correlations$q_value <- p.adjust(fat_correlations$p_value, method = "fdr")
+
+### Protein correlations
+metadata_prot_SCFA <- metadata_prot[,SCFA]
+results_prot <- expand.grid(DF1_Column = names(bug_prot), DF2_Column = names(metadata_prot_SCFA), stringsAsFactors = F)
+
+prot_correlations <- results_prot %>%
+  rowwise() %>%
+  mutate(test = list(cor.test(metadata_prot_SCFA[[DF2_Column]], bug_prot[[DF1_Column]], method="spearman", exact = F)),
+         estimate=test$estimate,
+         p_value=test$p.value,
+         Diet="High Protein",
+         pair=paste0(DF1_Column, DF2_Column, sep="_")) %>%
+  select(-test)
+
+prot_correlations$q_value <- p.adjust(prot_correlations$p_value, method="fdr")
+
+### Carb correlations
+metadata_carb_SCFA <- metadata_carb[,SCFA]
+results_carb <- expand.grid(DF1_Column = names(bug_carb), DF2_Column = names(metadata_carb_SCFA), stringsAsFactors = F)
+
+carb_correlations <- results_carb %>%
+  rowwise() %>%
+  mutate(test = list(cor.test(metadata_carb_SCFA[[DF2_Column]], bug_carb[[DF1_Column]], method="spearman", exact = F)),
+         estimate=test$estimate,
+         p_value=test$p.value,
+         Diet="High Carb",
+         pair=paste0(DF1_Column, DF2_Column, sep="_")) %>%
+  select(-test)
+
+carb_correlations$q_value <- p.adjust(carb_correlations$p_value, method="fdr")
+```
+
+```{r}
+merged_cors <- data.frame(rbind(fat_correlations, prot_correlations, carb_correlations), check.names = FALSE, stringsAsFactors = F)
+
+
+### okay we just need to figure out how to filter this correctly...
+keep_microbes <- merged_cors %>% filter(q_value < 0.1) %>% pull(pair) %>% unique()
+
+plot_df <- merged_cors %>% filter(pair %in% keep_microbes)
+
+
+plot_df %>% ggplot(aes(x=estimate, y=DF1_Column, color=Diet, alpha=q_value < 0.1)) + 
+  geom_point() +
+  facet_grid(rows=vars(DF2_Column), space="free", scales="free") +
+  scale_color_manual(values=col_diets) +
+  theme_bw(base_size = 12) +
+  theme(strip.text.y=element_text(angle=0)) +
+  ylab("Microbe")
+
+## for this one we will add abundance as size
+
+colnames(plot_df)[1] <- "Microbe"
+
+colnames(bug_abundance_by_food)[1] <- "Diet"
+colnames(bug_abundance_by_food)[2] <- "Microbe"
+
+plot_df_merge <- plot_df %>% left_join(bug_abundance_by_food, by=c("Diet", "Microbe"))
+
+plot_df_merge %>% ggplot(aes(x=estimate, y=Microbe, color=Diet, alpha=q_value < 0.1, size=mean_value)) + 
+  geom_point() +
+  facet_grid(rows=vars(DF2_Column), space="free", scales="free") +
+  scale_color_manual(values=col_diets) +
+  theme_bw(base_size = 12) +
+  theme(strip.text.y=element_text(angle=0)) +
+  ylab("Microbe")
+
+ggsave("Revisions/Display_Items/From_Figure4_script/microbe_SCFA_cors_size.pdf",
+       height=8, width=10)
+
+ggsave("Revisions/Display_Items/From_Figure4_script/microbe_SCFA_cors_size.png",
+       height=8, width=10)
+```
+

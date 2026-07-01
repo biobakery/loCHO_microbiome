@@ -33,6 +33,7 @@ load_taxa_data <- function(level="SGB", keep_unknown=TRUE){
   return(bug)
 }
 
+
 load_meta_data <- function(m4_data=bug){
   
   metadata_file <- "Data/Metadata/Hills Jackson LoCHO MS_Metagenomics and Metadata.xlsx - Hills Jackson LoCHO MS_all data.csv"
@@ -86,6 +87,34 @@ load_EC_data <- function(metadata=metadata, strat=FALSE, remove_ungroup=FALSE){
 }
 
 
+##added during revisions.
+load_EC_MTX_data <- function(metadata=metadata, strat=FALSE, relab=T){
+ 
+  if(relab!=T){
+    mtx_ec_file <- "Data/Transcriptomics/humann/ecs.tsv"
+  }else{
+    mtx_ec_file <- "Data/Transcriptomics/humann/ecs_named.tsv"
+  }
+  mtx_ecs <- read.csv(file=mtx_ec_file, sep="\t", header=T, row.names=1, check.names=F, comment.char="")
+  
+  #remove the extra sample that was duplicated
+  colnames(mtx_ecs) <- gsub("_.*", "", colnames(mtx_ecs))
+  mtx_ecs <- mtx_ecs[,-which(grepl("F-50179103-003S", colnames(mtx_ecs)))]
+  
+  if(strat){
+    filt_mtx_ecs <- keep_unstrat(mtx_ecs, rev=T)
+  }else{
+    filt_mtx_ecs <- keep_unstrat(mtx_ecs)
+  }
+  filt_mtx_ecs <- filt_mtx_ecs[,rownames(metadata)]
+  filt_mtx_ecs <- data.frame(t(filt_mtx_ecs), check.names = F)
+  return(filt_mtx_ecs)
+}
+
+
+
+
+
 load_geneFam_data <- function(metadata=metadata, strat=FALSE, remove_unmapped=FALSE){
   gene_file <- "Data/Funcational_profiles/merged_genefamilies.tsv"
   
@@ -108,6 +137,26 @@ load_geneFam_data <- function(metadata=metadata, strat=FALSE, remove_unmapped=FA
   filt_genes <- filt_genes[,rownames(metadata)]
   filt_genes <- data.frame(t(filt_genes), check.names = F)
   return(filt_genes)
+  
+}
+
+load_genefam_MTX_data <- function(metadata=metadata, strat=F){
+  gene_mtx_file <- "Data/Transcriptomics/humann/genefamilies.tsv"
+  
+  gene_mtx <- read.csv(gene_mtx_file, sep="\t", header=T, row.names=1, check.names=F)
+  
+  colnames(gene_mtx) <- gsub("_.*", "", colnames(gene_mtx))
+  gene_mtx <- gene_mtx[,-which(grepl("F-50179103-003S", colnames(gene_mtx)))]
+
+  if(strat){
+    filt_genes_mtx <- keep_unstrat(gene_mtx, rev = TRUE)
+  }else{
+    filt_genes_mtx <- keep_unstrat(gene_mtx)
+  }
+  
+  filt_genes_mtx <- filt_genes_mtx[,rownames(metadata)]
+  filt_genes_mtx <- data.frame(t(filt_genes_mtx), check.names = F)
+  return(filt_genes_mtx)
   
 }
 

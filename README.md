@@ -5,24 +5,23 @@ This repository contains the code used to produce the analysis in the manuscript
 
 ## Description of folder contents
 
-
-- Display Items
-
-Contains the intermediate plots used during the analysis of the paper.
-
-
 - HALLA
 
 Contains input and output files from running HALLA to produce microbe-metabolite correlations.
 
-- Markdown Analysis
+- Markdown Analysis (before revisions)
 
 Contains Rmarkdown files that were used to produce all of the figures in the manuscript. Each file is named based on a main figure and contains all the analysis of the results sections associated with that figure.
+
+- Markdown Analysis revisions
+
+These are the revisied markdown files for the updated analysis after our response for reviewer changes. 
 
 - utility_Scripts
 
 Contains code that was reused across Rmarkdown files. Generally these represent code to load in data from original data files or filtering operations used throughout the analysis. 
 
+***note that these need to be updated to work with the pubically available verison of the metadata + metabolomics data file.***
 
 # Note on Data 
 

@@ -1,0 +1,551 @@
+---
+title: "LowCHO.Figure1"
+author: "Jacob T. Nearing Ph.D."
+date: "2024-01-31"
+output: html
+---
+
+Load Libraries
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir = here::here())
+#source helper functions
+source(here::here("Utility_Scripts/helper_functions.R"))
+source(here::here("Utility_Scripts/load_data_functions.R"))
+
+library(mgsub)
+library(ggplot2)
+library(viridis)
+library(reshape2)
+library(dplyr)
+library(shadowtext)
+library(ggExtra)
+library(vegan)
+
+library(patchwork)
+```
+
+Load data
+```{r}
+bug <- load_taxa_data()
+bug_common <- bug[,is_common(t(bug))]
+  
+metadata <- load_meta_data(m4_data = bug)
+rownames(metadata) <- metadata$`Metagenomics Sample Number`
+
+pathways <- load_pathway_data(metadata = metadata, remove_unknown = T)
+pathways_common <- pathways[,is_common(t(pathways))]
+
+  
+ECs <- load_EC_data(metadata=metadata, remove_ungroup = T)
+ECs_common <- ECs[,is_common(t(ECs))]
+  
+geneFams <- load_geneFam_data(metadata=metadata, remove_unmapped = T)
+geneFams_common <- geneFams[,is_common(t(geneFams))]
+  
+fecal_mbx <- load_fecalMbx_data(metadata = metadata)
+fecal_mbx_common <- fecal_mbx[,is_common(t(fecal_mbx))]
+  
+serum_mbx <- load_serumMbx_data(metadata=metadata)
+serum_mbx_common <- serum_mbx[,is_common(t(serum_mbx))]
+  
+```
+
+Set coloring
+```{r}
+# Diet Coloring -----------------------------------------------------------
+#old colors
+#col_diets = c("High Carb" = "red3", "High Fat" = "darkslateblue", "High Protein" = "steelblue")
+
+col_diets = c("High Carb" = "#FF6700", "High Fat"="#56B4E9", "High Protein"="#009E73")
+
+
+# Bar colors for reference
+col = scale_fill_manual(values = c("#3288BD", "#5E4FA2", "#66A61E", "#FFED6F", "#FF0000", "#F46D43", "#E7298A", "#00008B", "#8DD3C7", "#FFFFB3", "#BEBADA", "#FB8072", "#80B1D3", "#B3DE69", "#FCCDE5", "#BC80BD", "#CCEBC5", "#9E0142", "#D53E4F", "#FDAE61", "#FEE08B", "#333333", "#66C2A5", "#3288BD", "#1B9E77", "#D95F02", "#7570B3", "#E6AB02", "#A6761D"))
+```
+
+# Figure 1A
+
+Figure 1A was generated in adobe illustrator
+
+Shows timeline of dog feeds as well as sample collection etc. 
+
+# Diet heatmap (Figure 1B)
+
+This figure shows the median measured amount of food the dogs ate over the course of each diet
+```{r}
+MBW_list <- c("Protein Crude_Dog Intake (per MBW)", "Fat Crude_Dog Intake (per MBW)", 
+              "Total Digestible Carbohydrate_Dog Intake (per MBW)", "Fiber Total Dietary_Dog Intake (per MBW)",
+              "Ash_Dog Intake (per MBW)", "Phosphorus_Dog Intake (per MBW)", 
+              "Fiber Insoluble_Dog Intake (per MBW)", "Fiber Soluble_Dog Intake (per MBW)",
+              "Starch_Dog Intake (per MBW)", "Sugars - Total_Dog Intake (per MBW)",
+              "Monounsaturated Fatty Acids_Dog Intake (per MBW)", "Omega 3 Sum_Dog Intake (per MBW)",
+              "Omega 6 Sum_Dog Intake (per MBW)", "Polyunsaturated Fatty Acids_Dog Intake (per MBW)",
+              "Time Point", "Animal Name", "Diet Name")
+
+
+diet_mbw_meta <- metadata[ , names(metadata) %in% MBW_list]
+median_by_mbw <- diet_mbw_meta %>% group_by(`Diet Name`) %>% summarize_if(is.numeric, median)
+scaled_by_mbw <- median_by_mbw %>% mutate(across(where(is.numeric), scale))
+
+median_by_mbw <- melt(median_by_mbw)
+median_by_mbw$`Diet Name` <- factor(median_by_mbw$`Diet Name`, c("High Carb", "High Protein", "High Fat"))
+median_by_mbw$variable <- gsub("_Dog.*", "", median_by_mbw$variable)
+
+scaled_by_mbw <- melt(scaled_by_mbw)
+scaled_by_mbw$`Diet Name` <- factor(scaled_by_mbw$`Diet Name`, c("High Carb", "High Protein", "High Fat"))
+scaled_by_mbw$variable <- gsub("_Dog.*", "", scaled_by_mbw$variable)
+
+identical(median_by_mbw$`Diet Name`, scaled_by_mbw$`Diet Name`)
+identical(median_by_mbw$variable, scaled_by_mbw$variable)
+
+scaled_by_mbw$original_values <- median_by_mbw$value
+
+
+Fig_1B_unscaled <- ggplot(median_by_mbw, aes(x = `Diet Name`, y = reorder(variable, value), fill = log(value))) + geom_tile(color = "black", size = 2) + theme_classic(base_size = 26) + scale_fill_viridis(discrete=FALSE) + geom_shadowtext(aes(label = round(value, 2)), size = 6) + ylab("Dietary component") + xlab("Diet") + labs(fill = "log(unit)")
+
+order_of_data <- c("Protein Crude", 
+                   "Fat Crude", "Monounsaturated Fatty Acids", "Polyunsaturated Fatty Acids", 
+                   "Omega 6 Sum", "Omega 3 Sum", 
+                   "Total Digestible Carbohydrate", "Sugars - Total", "Starch", 
+                   "Fiber Insoluble", "Fiber Soluble", "Fiber Total Dietary", "Ash", 
+                   "Phosphorus")
+
+Fig_1B_scaled <- ggplot(scaled_by_mbw, aes(x = `Diet Name`, y = factor(variable, levels=order_of_data), fill = value)) +
+  geom_tile(color = "black", size = 0.3) + 
+  theme_classic(base_size = 16) + 
+  scale_fill_viridis(discrete=FALSE) + 
+  geom_shadowtext(aes(label = round(original_values, 2)), size = 3.5) + 
+  xlab("Diet") + labs(fill = "log(unit)") + guides(fill="none") +
+  #coord_flip() +
+  theme(axis.text.x=element_text(angle=90)) +
+  labs(x = NULL, y= NULL)
+
+##need to sort y by types not values
+
+
+
+ggsave("Revisions/Display_Items/From_Figure1_script/Macro_Nutrients_Figure1B.pdf", height=10, width=12, plot = Fig_1B_scaled)
+ggsave("Revisions/Display_Items/From_Figure1_script/Macro_Nutrients_Figure1B.png", height=10, width=12, plot = Fig_1B_scaled)
+
+
+Fig_1B_scaled <- ggplot(scaled_by_mbw, aes(x = `Diet Name`, y = factor(variable, levels=order_of_data), fill = value)) +
+  geom_tile(color = "black", size = 0.3) + 
+  theme_classic(base_size = 16) + 
+  scale_fill_viridis(discrete=FALSE) + 
+  geom_shadowtext(aes(label = round(original_values, 2)), size = 3.5) + 
+  xlab("Diet") + labs(fill = "log(unit)") + guides(fill="none") +
+  coord_flip() +
+  theme(axis.text.x=element_text(angle=90, hjust=1)) +
+  labs(x = NULL, y= NULL)
+
+ggsave("Revisions/Display_Items/From_Figure1_script/Macro_Nutrients_Figure1B_horizontal.pdf", height=5, width=12, plot = Fig_1B_scaled)
+ggsave("Revisions/Display_Items/From_Figure1_script/Macro_Nutrients_Figure1B_horizontal.png", height=5, width=12, plot = Fig_1B_scaled)
+
+##plot out the legend individually
+get_legend2 <- function(plot, legend = NULL) {
+  if (is.ggplot(plot)) {
+    gt <- ggplotGrob(plot)
+  } else {
+    if (is.grob(plot)) {
+      gt <- plot
+    } else {
+      stop("Plot object is neither a ggplot nor a grob.")
+    }
+  }
+  pattern <- "guide-box"
+  if (!is.null(legend)) {
+    pattern <- paste0(pattern, "-", legend)
+  }
+  indices <- grep(pattern, gt$layout$name)
+  not_empty <- !vapply(
+    gt$grobs[indices], 
+    inherits, what = "zeroGrob", 
+    FUN.VALUE = logical(1)
+  )
+  indices <- indices[not_empty]
+  if (length(indices) > 0) {
+    return(gt$grobs[[indices[1]]])
+  }
+  return(NULL)
+}
+
+legend_fig1B <- get_legend2(Fig_1B_scaled)
+cowplot::ggdraw(legend_fig1B)
+ggsave(filename = "Revisions/Display_Items/From_Figure1_script/Macro_Nutrients_Figure1B_legend.pdf")
+
+```
+
+# Distribution of dogs weights pre-feed (baseline)
+
+```{r}
+col_dietorder = c("High Fat --> High Protein" = "#D3D3D3", "High Protein --> High Fat" = "#696969")
+
+metadata_carb = subset(metadata, metadata$`Diet Name` == "High Carb")
+
+Fig_weight_dist <- ggplot(metadata_carb, aes(x = BW, fill = `Diet Order Names`)) + geom_histogram(color = "black", bins = 8) + theme_classic(base_size = 30) + scale_fill_manual(values = col_dietorder) + xlab("Weight at Prefeed") + labs(fill = "Diet group") + ylab("Number of dogs")
+
+ggsave("Revisions/Display_Items/From_Figure1_script/weight_dist_supplement.pdf", height=6, width=18, plot=Fig_weight_dist)
+ggsave("Revisions/Display_Items/From_Figure1_script/weight_dist_supplement.png", height=6, width=18, plot=Fig_weight_dist)
+```
+
+# Distribution of dog ages pre-feed (baseline)
+
+```{r}
+col_dietorder = c("High Fat --> High Protein" = "#D3D3D3", "High Protein --> High Fat" = "#696969")
+
+metadata_carb = subset(metadata, metadata$`Diet Name` == "High Carb")
+
+Age_distb <- ggplot(metadata_carb, aes(x = `age (yr)`, fill = `Diet Order Names`)) + geom_histogram(color = "black", binwidth = 3) + theme_classic(base_size = 30) + scale_fill_manual(values = col_dietorder) + xlab("Age at Prefeed") + labs(fill = "Diet group") + ylab("Number of dogs")
+
+ggsave("Revisions/Display_Items/From_Figure1_script/age_dist_supplement.pdf", height=6, width=18, plot=Age_distb)
+ggsave("Revisions/Display_Items/From_Figure1_script/age_dist_supplement.png", height=6, width=18, plot=Age_distb)
+```
+
+
+# BHB levels (Fig 1C, Fig 1D)
+
+```{r}
+fecal_mbx_named <- fecal_mbx
+fecal_mbx_named$`Metagenomics Sample Number` <-rownames(fecal_mbx)
+
+serum_mbx_named <- serum_mbx
+serum_mbx_named$`Metagenomics Sample Number` <- rownames(serum_mbx)
+
+metadata_fecal_mbx <- metadata %>% left_join(fecal_mbx_named)
+metadata_serum_mbx <- metadata %>% left_join(serum_mbx_named)
+```
+
+## Serum BHB
+```{r}
+metadata_serum_mbx %>% ggplot(aes(x=`Diet Name`, y=`3-hydroxybutyrate (BHBA)`, fill=`Diet Name`)) + 
+  geom_boxplot(outlier.shape=NA) +
+  geom_jitter(alpha=0.5) +
+  theme_classic(base_size = 16) +
+  xlab("") +
+  guides(fill="none") +
+  scale_fill_manual(values=col_diets) +
+  ylab("Serum 3-hydroxybutyrate") +
+  ggpubr::geom_pwc(label="p.adj.signif")
+
+ggsave("Revisions/Display_Items/From_Figure1_script/Serum_BHB.pdf", height=5, width=3.5)
+ggsave("Revisions/Display_Items/From_Figure1_script/Serum_BHB.png", height=5, width=3.5)
+```
+## Serum BHB (measured)
+
+```{r}
+metadata_serum_mbx %>% ggplot(aes(x=`Diet Name`, y=`beta-hydroxybutyrate (B-HBA) uM`, fill=`Diet Name`)) + 
+  geom_boxplot(outlier.shape=NA) +
+  geom_jitter(alpha=0.5) +
+  theme_classic(base_size = 16) +
+  xlab("") +
+  guides(fill="none") +
+  scale_fill_manual(values=col_diets) +
+  ylab("Serum 3-hydroxybutyrate") +
+  ggpubr::geom_pwc(label="p.adj.signif")
+
+
+ggsave("Revisions/Display_Items/From_Figure1_script/Serum_BHB_measured.pdf", height=5, width=3.5)
+ggsave("Revisions/Display_Items/From_Figure1_script/Serum_BHB_measured.png", height=5, width=3.5)
+```
+
+## Fecal BHB
+
+```{r}
+metadata_fecal_mbx %>% ggplot(aes(x=`Diet Name`, y=`3-hydroxybutyrate (BHBA)`, fill=`Diet Name`)) + 
+  geom_boxplot(outlier.shape=NA) +
+  geom_jitter(alpha=0.5) +
+  theme_classic(base_size = 16) +
+  xlab("") +
+  guides(fill="none") +
+  scale_fill_manual(values=col_diets) +
+  ylab("Fecal 3-hydroxybutyrate") +
+  ggpubr::geom_pwc(label="p.adj.signif")
+
+ggsave("Revisions/Display_Items/From_Figure1_script/Fecal_BHB.pdf", height=5, width=3.5)
+ggsave("Revisions/Display_Items/From_Figure1_script/Fecal_BHB.png", height=5, width=3.5)
+```
+
+## Compare Serum BHB measured to metabolomics
+```{r}
+metadata_serum_mbx %>% ggplot(aes(x=`beta-hydroxybutyrate (B-HBA) uM`, y=`3-hydroxybutyrate (BHBA)`,
+                              color=`Diet Name`)) + 
+  geom_point() + facet_grid(~`Diet Name`) +
+  scale_color_manual(values=col_diets)
+
+ggsave("Revisions/Display_Items/From_Figure1_script/serum_BHB_comparison.pdf", height=4, width=5.5)
+ggsave("Revisions/Display_Items/From_Figure1_script/serum_BHB_comparison.png", height=4, width=5.5)
+
+cor.test(metadata_serum_mbx$`beta-hydroxybutyrate (B-HBA) uM`, metadata_serum_mbx$`3-hydroxybutyrate (BHBA)`,
+         method="spearman")
+
+
+```
+
+
+# Figure 1E
+
+```{r}
+run_adonis <- function(metadata_list, dist, metadata){
+  r2_list <- list()
+  p_list <- list()
+  stopifnot(identical(rownames(metadata), rownames(as.matrix(dist))))
+  for(value in metadata_list){
+    temp_stats = adonis2(dist ~ metadata[,value], strata = metadata$`Animal Name`, permutations = 10000)
+    r2_list[[value]] <- temp_stats$R2[1]
+    p_list[[value]] <- temp_stats$`Pr(>F)`[1]
+  }
+  return(list(r2_list, p_list))
+}
+
+metadata_list <- c("Gender", "age (yr)", "Diet Name", "Diet Order Names", "Fat Crude_Dog Intake (per MBW)",
+                   "Total Digestible Carbohydrate_Dog Intake (per MBW)", "Fiber Total Dietary_Dog Intake (per MBW)", 
+                   "Ash_Dog Intake (per MBW)", "Phosphorus_Dog Intake (per MBW)", "Fiber Insoluble_Dog Intake (per MBW)",
+                   "Fiber Soluble_Dog Intake (per MBW)", "Starch_Dog Intake (per MBW)", 
+                   "Sugars - Total_Dog Intake (per MBW)", "Monounsaturated Fatty Acids_Dog Intake (per MBW)", 
+                   "Omega 3 Sum_Dog Intake (per MBW)", "Omega 6 Sum_Dog Intake (per MBW)", 
+                   "Polyunsaturated Fatty Acids_Dog Intake (per MBW)", "True Protein Digestibility", 
+                   "Fecal Bypass True Protein (g per MBW)", 
+                   "Fecal Bypass Fat (g per MBW)", "Fecal Bypass Carbohydrate (g per MBW)", 
+                   "Fecal Bypass Fiber (g per MBW)")
+
+
+generate_plotting_df <- function(results){
+  
+  univar_res_smbx = rbind(results[[2]], results[[1]])
+  univar_res_smbx = as.data.frame(t(univar_res_smbx))
+  names(univar_res_smbx) = c("P-Value", "R2")
+  univar_res_smbx$`P-Value` = as.numeric(univar_res_smbx$`P-Value`)
+  univar_res_smbx$R2 = as.numeric(univar_res_smbx$R2)
+  univar_res_smbx$p_adj = p.adjust(univar_res_smbx$`P-Value`, "fdr")
+  univar_res_smbx = subset(univar_res_smbx, row.names(univar_res_smbx)!="Protein_Crude_Dog_Intake")
+  list_rownames = c("Sex", "Age", "Diet", "Diet order", "Fat", "Carbohydrate", "Total Fiber", "Ash", "Phosphorus", 
+                    "Fiber Insoluble", "Fiber Soluble", "Starch", "Sugars", "Monounsaturated Fatty Acids", "Omega 3",
+                    "Omega 6", "Polyunsaturated Fatty Acids", "Protein Digestibility (True)", "Protein Fecal Bypass", 
+                    "Fat Fecal Bypass", "Carbohydrate Fecal Bypass", "Fiber Fecal Bypass", "Dog")
+  univar_res_smbx$clinical = list_rownames
+
+  univar_res_smbx$stars = cut(univar_res_smbx$p_adj, c(-Inf, 0.001, 0.01, 0.05, 0.1, Inf), 
+                              labels = c("***", "**", "*", "'", ""))
+  
+  return(univar_res_smbx)
+}
+```
+Barplot showing the assocaiton between collected omics-data are various dietary and demographic data
+
+## Run adonis tests on SGBs
+```{r}
+bray_SGB <- vegdist(bug_common, method="bray")
+
+SGB_adonis_res <- run_adonis(metadata_list = metadata_list, dist = bray_SGB, metadata = metadata)
+subjectID_stats = adonis2(bray_SGB ~ `Animal Name`, data = metadata, permutations = 10000)
+SGB_adonis_res[[1]][["Dog"]] <- subjectID_stats$R2[1]
+SGB_adonis_res[[2]][["Dog"]] <- subjectID_stats$`Pr(>F)`[1]
+
+SGB_adonis_DF <- generate_plotting_df(SGB_adonis_res)
+SGB_adonis_DF$data_type <- "Taxonomy"
+```
+
+## Run adonis on Pathways
+
+```{r}
+bray_paths <- vegdist(pathways_common, method="bray")
+pathway_adonis_res <- run_adonis(metadata_list = metadata_list, dist=bray_paths, metadata=metadata)
+subjectID_stats = adonis2(bray_paths ~ `Animal Name`, data = metadata, permutations = 10000)
+pathway_adonis_res[[1]][["Dog"]] <- subjectID_stats$R2[1]
+pathway_adonis_res[[2]][["Dog"]] <- subjectID_stats$`Pr(>F)`[1]
+
+pathway_adonis_DF <- generate_plotting_df(pathway_adonis_res)
+pathway_adonis_DF$data_type <- "Pathways"
+```
+
+## Run adonis on ECs
+```{r}
+bray_ECs <- vegdist(ECs_common, method="bray")
+ECs_adonis_res <- run_adonis(metadata_list = metadata_list, dist=bray_ECs, metadata=metadata)
+subjectID_stats = adonis2(bray_ECs ~ `Animal Name`, data = metadata, permutations = 10000)
+ECs_adonis_res[[1]][["Dog"]] <- subjectID_stats$R2[1]
+ECs_adonis_res[[2]][["Dog"]] <- subjectID_stats$`Pr(>F)`[1]
+
+ECs_adonis_DF <- generate_plotting_df(ECs_adonis_res)
+ECs_adonis_DF$data_type <- "ECs"
+```
+
+## Run adonis on geneFams
+
+```{r}
+bray_genes <- vegdist(geneFams_common, method="bray")
+Gene_adonis_res <- run_adonis(metadata_list=metadata_list, dist=bray_genes, metadata=metadata)
+subjectID_stats = adonis2(bray_genes ~ `Animal Name`, data = metadata, permutations = 10000)
+Gene_adonis_res[[1]][["Dog"]] <- subjectID_stats$R2[1]
+Gene_adonis_res[[2]][["Dog"]] <- subjectID_stats$`Pr(>F)`[1]
+
+Gene_adonis_DF <- generate_plotting_df(Gene_adonis_res)
+Gene_adonis_DF$data_type <- "Gene Families"
+```
+
+## Run adonis on fecal MBX
+```{r}
+bray_FMbx <- vegdist(fecal_mbx_common, method="manhattan")
+FMbx_adonis_res <- run_adonis(metadata_list=metadata_list, dist=bray_FMbx, metadata=metadata)
+subjectID_stats = adonis2(bray_FMbx ~ `Animal Name`, data = metadata, permutations = 10000)
+FMbx_adonis_res[[1]][["Dog"]] <- subjectID_stats$R2[1]
+FMbx_adonis_res[[2]][["Dog"]] <- subjectID_stats$`Pr(>F)`[1]
+
+FMBx_adonis_DF <- generate_plotting_df(FMbx_adonis_res)
+FMBx_adonis_DF$data_type <- "Fecal Metabolites"
+```
+
+## Run adonis on Serum MBX
+```{r}
+bray_SMbx <- vegdist(serum_mbx_common, method="manhattan")
+SMbx_adonis_res <- run_adonis(metadata_list=metadata_list, dist=bray_SMbx, metadata=metadata)
+subjectID_stats = adonis2(bray_SMbx ~ `Animal Name`, data = metadata, permutations = 10000)
+SMbx_adonis_res[[1]][["Dog"]] <- subjectID_stats$R2[1]
+SMbx_adonis_res[[2]][["Dog"]] <- subjectID_stats$`Pr(>F)`[1]
+
+SMBx_adonis_DF <- generate_plotting_df(SMbx_adonis_res)
+SMBx_adonis_DF$data_type <- "Serum Metabolites"
+```
+
+## Generate plot
+```{r}
+univar = rbind(SGB_adonis_DF, pathway_adonis_DF, ECs_adonis_DF, Gene_adonis_DF, FMBx_adonis_DF, SMBx_adonis_DF)
+
+col_bar = c("Taxonomy" = "#4682B4", "Pathways" = "#5F9EA0", "ECs" = "#483D8B", "Gene Families" = "#FF7F50", "Fecal Metabolites" = "#800000", "Serum Metabolites" = "#DC143C")
+
+univar$data_type = factor(univar$data_type, c("Serum Metabolites", "Fecal Metabolites", "Gene Families", "ECs", "Pathways", "Taxonomy"))
+dodge = position_dodge(width = 0.8)
+
+supp_fig_adonis <- ggplot(data = univar, aes(reorder(clinical, R2), y = R2, label = stars, fill = data_type)) + geom_bar(stat = "identity", position = dodge, color = "black") + geom_text(position = dodge, vjust = 0.8, hjust = -0.1, size = 4) + theme_bw(base_size = 18) + ylab("Univarate R-squared") + coord_flip() + ylim(0, 1) + xlab("") + labs(fill = "Feature type") + scale_fill_manual(values = col_bar) + guides(fill = guide_legend(reverse=T))
+
+ggsave("Revisions/Display_Items/From_Figure1_script/Full_adonis_supplement.pdf", height=15, width=12, plot=supp_fig_adonis)
+ggsave("Revisions/Display_Items/From_Figure1_script/Full_adonis_supplement.png", height=15, width=12, plot=supp_fig_adonis)
+
+```
+
+```{r}
+
+include = c("Dog","Diet", "Sex", "Age", "Protein Fecal Bypass", "Fat Fecal Bypass", "Carbohydrate Fecal Bypass", "Fiber Fecal Bypass")
+
+univar_sub = univar[univar$clinical %in% include, ]
+
+#png("univariate_analysis_all_features.png", width = 10, height = 6, units = "in", res = 600)
+Fig_1E <- ggplot(data = univar_sub, aes(reorder(clinical, R2), y = R2, label = stars, fill = data_type)) + geom_bar(stat = "identity", position = dodge, color = "black") + geom_text(position = dodge, vjust = 0.8, hjust = -0.1, size = 4) + theme_bw(base_size = 18) + ylab("Univarate R-squared") + coord_flip() + ylim(0, 0.5) + xlab("") + labs(fill = "Feature type") + scale_fill_manual(values = col_bar) + guides(fill = guide_legend(reverse=T)) + coord_flip()
+
+ggsave("Revisions/Display_Items/From_Figure1_script/Adonis_Figure1E.pdf", height=4, width=12, plot=Fig_1E)
+ggsave("Revisions/Display_Items/From_Figure1_script/Adonis_Figure1E.png", height=12, width=12, plot=Fig_1E)
+```
+
+
+# Supplemental PCoAs
+
+## Taxonomy
+```{r}
+bray = vegdist(bug_common, method = "bray")
+pc = capscale(bray~1, comm = bug_common)
+cap = data.frame(pc$CA$u)
+cap = merge(metadata, cap, by = "row.names")
+rownames(cap) = cap[,"Metagenomics Sample Number"]
+s = summary(pc)
+
+data_wa = data.frame(wascores(pc$CA$u[, 1:2], bug_common))
+data_wa_sub = data_wa[which(abs(data_wa$MDS1)>0.12 | abs(data_wa$MDS2)>0.12),]
+row.names(data_wa_sub) = gsub("s__", "", row.names(data_wa_sub))
+row.names(data_wa_sub) = gsub("_SGB.*", " ", row.names(data_wa_sub))
+row.names(data_wa_sub) = gsub("_", " ", row.names(data_wa_sub))
+
+
+ggplot(cap, aes(MDS1, MDS2)) + geom_point(aes(fill = `Diet Name`), colour="black", shape=21, stroke = 1, size = 3) + theme_bw(base_size = 12)  + scale_fill_manual(values = col_diets) + scale_alpha_manual(guide='none', values = list(a = 0.2, point = 1)) + labs(fill = "Diet") + coord_fixed() + geom_shadowtext(data=data_wa_sub, aes(x = MDS1, y = MDS2, label = rownames(data_wa_sub)), check_overlap = TRUE, vjust = 0, hjust = 0.5, size = 3, fontface = "italic",color = "black", bg.color = "white") + 
+  labs(title="",
+       x = paste("Axis 1 (", round(s$cont$importance[2,1]*100, digits =2), "%)", sep = ''),
+       y = paste("Axis 2 (", round(s$cont$importance[2,2]*100, digits =2), "%)", sep = ''))
+
+
+
+ggsave("Revisions/Display_Items/From_Figure1_script/Bray_PCoA.pdf", height=6, width=6)
+ggsave("Revisions/Display_Items/From_Figure1_script/Bray_PCoA.png", height=6, width=6)
+```
+
+## Fecal MBX
+
+```{r}
+bray = vegdist(log2(fecal_mbx), method = "manhattan")
+pc = capscale(bray~1)
+cap = data.frame(pc$CA$u)
+cap = merge(metadata, cap, by = "row.names")
+rownames(cap) = cap[,"Metagenomics Sample Number"]
+s = summary(pc)
+
+
+ggplot(cap, aes(MDS1, MDS2)) + geom_point(aes(fill = `Diet Name`), colour="black", shape=21, stroke = 1, size = 3) + theme_bw(base_size = 12)  + scale_fill_manual(values = col_diets) + scale_alpha_manual(guide='none', values = list(a = 0.2, point = 1)) + labs(fill = "Diet") + coord_fixed() + 
+  labs(title="",
+       x = paste("Axis 1 (", round(s$cont$importance[2,1]*100, digits =2), "%)", sep = ''),
+       y = paste("Axis 2 (", round(s$cont$importance[2,2]*100, digits =2), "%)", sep = ''))
+
+ggsave("Revisions/Display_Items/From_Figure1_script/PcoA_fecal_mbx.pdf", height=6, width=6)
+ggsave("Revisions/Display_Items/From_Figure1_script/PcoA_fecal_mbx.png", height=6, width=6)
+```
+
+
+## Serum MBX
+
+```{r}
+bray = vegdist(log2(serum_mbx), method = "manhattan")
+pc = capscale(bray~1)
+cap = data.frame(pc$CA$u)
+cap = merge(metadata, cap, by = "row.names")
+rownames(cap) = cap[,"Metagenomics Sample Number"]
+s = summary(pc)
+
+
+ggplot(cap, aes(MDS1, MDS2)) + geom_point(aes(fill = `Diet Name`), colour="black", shape=21, stroke = 1, size = 3) + theme_bw(base_size = 12)  + scale_fill_manual(values = col_diets) + scale_alpha_manual(guide='none', values = list(a = 0.2, point = 1)) + labs(fill = "Diet") + coord_fixed() + 
+  labs(title="",
+       x = paste("Axis 1 (", round(s$cont$importance[2,1]*100, digits =2), "%)", sep = ''),
+       y = paste("Axis 2 (", round(s$cont$importance[2,2]*100, digits =2), "%)", sep = ''))
+
+ggsave("Revisions/Display_Items/From_Figure1_script/PcoA_serum_mbx.pdf", height=6, width=6)
+ggsave("Revisions/Display_Items/From_Figure1_script/PCoA_serum_mbx.png", height=6, width=6)
+```
+
+## ECs
+
+```{r}
+bray = vegdist(ECs, method = "bray")
+pc = capscale(bray~1)
+cap = data.frame(pc$CA$u)
+cap = merge(metadata, cap, by = "row.names")
+rownames(cap) = cap[,"Metagenomics Sample Number"]
+s = summary(pc)
+
+
+ggplot(cap, aes(MDS1, MDS2)) + geom_point(aes(fill = `Diet Name`), colour="black", shape=21, stroke = 1, size = 3) + theme_bw(base_size = 12)  + scale_fill_manual(values = col_diets) + scale_alpha_manual(guide='none', values = list(a = 0.2, point = 1)) + labs(fill = "Diet") + coord_fixed() + 
+  labs(title="",
+       x = paste("Axis 1 (", round(s$cont$importance[2,1]*100, digits =2), "%)", sep = ''),
+       y = paste("Axis 2 (", round(s$cont$importance[2,2]*100, digits =2), "%)", sep = ''))
+
+ggsave("Revisions/Display_Items/From_Figure1_script/PcoA_ECs.pdf", height=6, width=6)
+ggsave("Revisions/Display_Items/From_Figure1_script/PCoA_ECs.png", height=6, width=6)
+
+```
+
+## Pathways
+
+```{r}
+bray = vegdist(pathways, method = "bray")
+pc = capscale(bray~1)
+cap = data.frame(pc$CA$u)
+cap = merge(metadata, cap, by = "row.names")
+rownames(cap) = cap[,"Metagenomics Sample Number"]
+s = summary(pc)
+
+
+ggplot(cap, aes(MDS1, MDS2)) + geom_point(aes(fill = `Diet Name`), colour="black", shape=21, stroke = 1, size = 3) + theme_bw(base_size = 12)  + scale_fill_manual(values = col_diets) + scale_alpha_manual(guide='none', values = list(a = 0.2, point = 1)) + labs(fill = "Diet") + coord_fixed() + 
+  labs(title="",
+       x = paste("Axis 1 (", round(s$cont$importance[2,1]*100, digits =2), "%)", sep = ''),
+       y = paste("Axis 2 (", round(s$cont$importance[2,2]*100, digits =2), "%)", sep = ''))
+
+ggsave("Revisions/Display_Items/From_Figure1_script/PcoA_pathways.pdf", height=6, width=6)
+ggsave("Revisions/Display_Items/From_Figure1_script/PCoA_pathways.png", height=6, width=6)
+```
+

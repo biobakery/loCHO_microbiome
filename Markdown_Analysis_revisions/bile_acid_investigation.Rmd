@@ -1,0 +1,385 @@
+---
+title: "MTX_inital_analysis"
+author: "Jacob T Nearing"
+date: "2026-03-31"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+source(here::here("Utility_Scripts/helper_functions.R"))
+source(here::here("Utility_Scripts/load_data_functions.R"))
+
+library(maaslin3)
+library(dplyr)
+
+
+col_diets = c("High Carb" = "#FF6700", "High Fat"="#56B4E9", "High Protein"="#009E73")
+```
+
+
+```{r}
+bug <- load_taxa_data()
+bug_common <- bug[,is_common(t(bug))]
+  
+metadata <- load_meta_data(m4_data = bug)
+metadata$Diet <- metadata$`Diet Name`
+metadata$Age <- metadata$`age (yr)`
+metadata$DogID <- metadata$`Animal Name`
+metadata$dietOrder <- metadata$`Diet Order Names`
+rownames(metadata) <- metadata$`Metagenomics Sample Number`
+```
+
+# Maaslin3 EC run using plog
+```{r}
+
+mtx_ec_data <- load_EC_MTX_data(metadata, strat=F, relab = F)
+#remove ungrouped.
+mtx_ec_data <- mtx_ec_data[,-1]
+
+
+mtx_ec_data_prepross <- mtx_ec_data
+colnames(mtx_ec_data_prepross) <- gsub(":.*", "", colnames(mtx_ec_data_prepross))
+mgx_ec_data <- load_EC_data(metadata, strat=F)
+#remove ungrouped.
+mgx_ec_data[,-1]
+
+preprocess_out <- preprocess_dna_mtx(mgx_ec_data, mtx_ec_data_prepross)
+
+######filter out things that are not found in at least 20% of samples.
+keep_cols <- which(colSums(preprocess_out$rna_table > 0) >= 21)
+length(keep_cols)
+
+
+preprocess_out$dna_table <- preprocess_out$dna_table[,keep_cols]
+preprocess_out$rna_table <- preprocess_out$rna_table[,keep_cols]
+
+metadata$diet = factor(metadata$Diet, levels = c("High Carb", "High Protein", "High Fat"))
+metadata$age <- metadata$`age (yr)`
+metadata$animal <- metadata$`Animal Name`
+metadata$order <- as.character(metadata$`Diet Order Group Number`)
+
+fit_out <- maaslin3(input_data = preprocess_out$rna_table,
+                    input_metadata = metadata,
+                    output = 'diet_ec_mtx_plog_filt',
+                    formula = '~ age + Gender + diet + (1|animal)',
+                    normalization = 'TSS',
+                    transform = 'pLOG',
+                    feature_specific_covariate = preprocess_out$dna_table,
+                    feature_specific_covariate_name = "DNA",
+                    feature_specific_covariate_record = FALSE,
+                    augment = TRUE,
+                    standardize = TRUE,
+                    max_significance = 0.1,
+                    median_comparison_abundance = TRUE,
+                    median_comparison_prevalence = FALSE,
+                    max_pngs = 250,
+                    cores = 1,
+                    small_random_effects = F,
+                    zero_threshold = -1,
+                    evaluate_only = "abundance",
+                    warn_prevalence = F)
+
+saveRDS(fit_out, "diet_ec_mtx_plog_filt/model_res.RDS")
+
+# 
+# fit_out <- maaslin3(input_data = preprocess_out$rna_table,
+#                     input_metadata = metadata,
+#                     output = 'diet_ec_mtx_plog_filt_total',
+#                     formula = '~ age + Gender + diet + (1|animal)',
+#                     normalization = 'TSS',
+#                     transform = 'pLOG',
+#                     augment = TRUE,
+#                     standardize = TRUE,
+#                     max_significance = 0.1,
+#                     median_comparison_abundance = TRUE,
+#                     median_comparison_prevalence = FALSE,
+#                     max_pngs = 25,
+#                     cores = 1,
+#                     small_random_effects = F,
+#                     zero_threshold = -1,
+#                     evaluate_only = "abundance",
+#                     warn_prevalence = F)
+# 
+# saveRDS(fit_out, "diet_ec_mtx_plog_filt_total/model_res.RDS")
+
+```
+
+##read results.
+```{r}
+EC_mtx_diet_res <- read.table(here::here("diet_ec_mtx_plog_filt/all_results.tsv"), sep="\t", header=T)
+EC_mtx_diet_res_total <- read.table(here::here("diet_ec_mtx_plog_filt_total/all_results.tsv"), sep="\t", header=T)
+```
+
+
+## SCFA
+```{r}
+mbx_diet_res <- read.table(here::here("diet_fecalMBX_MaAsLin3/all_results.tsv"), sep="\t", header=T)
+
+
+EC_mtx_diet_res %>% filter(feature=='3.1.2.27')
+EC_mtx_diet_res_total %>% filter(feature=='3.1.2.27')
+
+
+EC_mtx_diet_res %>% filter(feature=='3.5.1.24')
+
+
+EC_mtx_diet_res %>% filter(feature=='1.3.1.115')
+EC_mtx_diet_res_total %>% filter(feature=='1.3.1.115')
+
+
+EC_mtx_diet_res %>% filter(feature=='4.2.1.106')
+EC_mtx_diet_res_total %>% filter(feature=='4.2.1.106')
+
+
+##load mtx ec strat
+
+mtx_ec_strat <- load_EC_MTX_data(metadata, strat = T, relab = F)
+mtx_ec_strat$`Metagenomics Sample Number` <- rownames(mtx_ec_strat)
+
+
+
+keep_cols <- colnames(mtx_ec_strat)[grep("4.2.1.106\\|", colnames(mtx_ec_strat))]
+
+metadata_ec_strat <- metadata %>% left_join(mtx_ec_strat)
+
+plot_df <- metadata_ec_strat %>% select(c("Diet", "Metagenomics Sample Number", keep_cols)) %>% reshape2::melt(id.vars=c("Diet", "Metagenomics Sample Number")) %>% 
+  tidyr::separate(variable, into=c("EC", "Taxon"), sep="\\|") 
+
+
+taxa_keep <- plot_df %>% group_by(Taxon) %>% summarize(mean=mean(value)) %>% arrange(desc(mean)) %>% pull(Taxon) %>% head(n=10)
+
+plot_df$taxa_labs <- plot_df$Taxon
+plot_df$taxa_labs[which(!plot_df$taxa_labs %in% taxa_keep)] <- "Other"
+
+cols <- Polychrome::palette36.colors(n=11)
+cols <- unname(cols)
+
+cols <- c("blue", "red", "grey")
+
+library(ggplot2)
+plot_df %>% ggplot(aes(x=`Metagenomics Sample Number`, y=value, fill=taxa_labs)) + geom_col() +
+  facet_wrap(~ Diet, scales = "free_x") + scale_fill_manual(values=cols) +
+  ylab("7-alpha-dehydratase transcript CPM") +
+  xlab("") +
+  theme(axis.text.x = element_blank()) +
+  labs(fill="Contributing Taxon") +
+  theme_bw()
+
+
+ec_mtx <- load_EC_MTX_data(metadata, strat=F, relab=F)
+ec_mtx$`Metagenomics Sample Number` <- rownames(ec_mtx)
+
+metadata_ec_mtx <- metadata %>% left_join(ec_mtx)
+
+
+
+ggsave("Revisions/Display_Items/From_bile_acid_invest/7-alpha-dehydratase_strat.png", height=8, width=12)
+ggsave("Revisions/Display_Items/From_bile_acid_invest/7-alpha-dehydratase_strat.pdf", height=8, width=12)
+
+
+
+metadata_ec_mtx %>% ggplot(aes(x=Diet, y=`4.2.1.106`, fill=Diet)) +
+  geom_boxplot() + 
+  scale_fill_manual(values=col_diets) +
+  theme_bw() +
+  ylab("7-alpha-dehydrtase transcripts CPM")
+
+ggsave("Revisions/Display_Items/From_bile_acid_invest/7-alpha-dehydratase_mtx.png", height=5, width=3.5)
+ggsave("Revisions/Display_Items/From_bile_acid_invest/7-alpha-dehydratase_mtx.pdf", height=5, width=3.5)
+
+EC_mtx_diet_res %>% filter(feature=='1.1.1.392')
+EC_mtx_diet_res_total %>% filter(feature=='1.1.1.392')
+
+EC_mtx_diet_res %>% filter(feature=='1.1.1.393')
+EC_mtx_diet_res_total %>% filter(feature=='1.1.1.393')
+
+
+
+keep_cols <- colnames(mtx_ec_strat)[grep("1.1.1.393\\|", colnames(mtx_ec_strat))]
+
+metadata_ec_strat <- metadata %>% left_join(mtx_ec_strat)
+
+plot_df <- metadata_ec_strat %>% select(c("Diet", "Metagenomics Sample Number", keep_cols)) %>% reshape2::melt(id.vars=c("Diet", "Metagenomics Sample Number")) %>% 
+  tidyr::separate(variable, into=c("EC", "Taxon"), sep="\\|") 
+
+
+taxa_keep <- plot_df %>% group_by(Taxon) %>% summarize(mean=mean(value)) %>% arrange(desc(mean)) %>% pull(Taxon) %>% head(n=10)
+
+plot_df$taxa_labs <- plot_df$Taxon
+plot_df$taxa_labs[which(!plot_df$taxa_labs %in% taxa_keep)] <- "Other"
+
+cols <- Polychrome::palette36.colors(n=11)
+cols <- unname(cols)
+
+
+
+library(ggplot2)
+plot_df %>% ggplot(aes(x=`Metagenomics Sample Number`, y=value, fill=taxa_labs)) + geom_col() +
+  facet_wrap(~ Diet, scales = "free_x") + scale_fill_manual(values=cols) +
+  ylab("3beta-hydroxysteroid dehydrogenase transcripts CPM") +
+  xlab("") +
+  theme(axis.text.x = element_blank()) +
+  labs(fill="Contributing Taxon") +
+  theme_bw()
+
+ggsave("Revisions/Display_Items/From_bile_acid_invest/3beta-hydroxysteroid_strat.png", height=8, width=12)
+ggsave("Revisions/Display_Items/From_bile_acid_invest/3beta-hydroxysteroid_strat.pdf", height=8, width=12)
+
+
+test <- plot_df %>% group_by(`Metagenomics Sample Number`) %>% mutate(prop=value/sum(value)) %>% ungroup()
+test %>% group_by(Taxon) %>% summarize(sd=sd(prop, na.rm=T))
+
+
+EC_mtx_diet_res %>% filter(feature=='1.1.1.159')
+EC_mtx_diet_res_total %>% filter(feature=='1.1.1.159')
+
+EC_mtx_diet_res %>% filter(feature=='1.1.1.201')
+EC_mtx_diet_res_total %>% filter(feature=='1.1.1.201')
+
+
+
+keep_cols <- colnames(mtx_ec_strat)[grep("3.5.1.24\\|", colnames(mtx_ec_strat))]
+
+metadata_ec_strat <- metadata %>% left_join(mtx_ec_strat)
+
+plot_df <- metadata_ec_strat %>% select(c("Diet", "Metagenomics Sample Number", keep_cols)) %>% reshape2::melt(id.vars=c("Diet", "Metagenomics Sample Number")) %>% 
+  tidyr::separate(variable, into=c("EC", "Taxon"), sep="\\|") 
+
+
+taxa_keep <- plot_df %>% group_by(Taxon) %>% summarize(mean=mean(value)) %>% arrange(desc(mean)) %>% pull(Taxon) %>% head(n=10)
+
+plot_df$taxa_labs <- plot_df$Taxon
+plot_df$taxa_labs[which(!plot_df$taxa_labs %in% taxa_keep)] <- "Other"
+
+cols <- Polychrome::palette36.colors(n=11)
+cols <- unname(cols)
+
+
+library(ggplot2)
+plot_df %>% ggplot(aes(x=`Metagenomics Sample Number`, y=value, fill=taxa_labs)) + geom_col() +
+  facet_wrap(~ Diet, scales = "free_x") + scale_fill_manual(values=cols) +
+  ylab("Bile Salt hydrolase transcript CPM") +
+  xlab("") +
+  theme(axis.text.x = element_blank()) +
+  labs(fill="Contributing Taxon") +
+  theme_bw()
+
+
+metadata_ec_mtx %>% ggplot(aes(x=Diet, y=`3.5.1.24`, fill=Diet)) +
+  geom_boxplot() + 
+  scale_fill_manual(values=col_diets) +
+  theme_bw() +
+  ylab("Bile Salt Hydrolase transcript CPM")
+
+ggsave("Revisions/Display_Items/From_bile_acid_invest/bile_salt_mtx.png", height=5, width=3.5)
+ggsave("Revisions/Display_Items/From_bile_acid_invest/bile_salt_mtx.pdf", height=5, width=3.5)
+
+```
+
+## indole analysis
+
+```{r}
+library(ggpubr)
+metadata_ec_mtx %>% ggplot(aes(x=Diet, y=`4.1.99.1`, fill=Diet)) +
+  geom_boxplot() + 
+  geom_pwc() +
+  scale_fill_manual(values=col_diets) +
+  theme_bw() +
+  ylab("Tryptophanase transcript CPM")
+
+
+ggsave("Revisions/Display_Items/From_bile_acid_invest/tryptophanses_mtx.png", height=5, width=3.5)
+ggsave("Revisions/Display_Items/From_bile_acid_invest/trptophanses_mtx.pdf", height=5, width=3.5)
+
+
+
+keep_cols <- colnames(mtx_ec_strat)[grep("4.1.99.1\\|", colnames(mtx_ec_strat))]
+
+metadata_ec_strat <- metadata %>% left_join(mtx_ec_strat)
+
+plot_df <- metadata_ec_strat %>% select(c("Diet", "Metagenomics Sample Number", keep_cols)) %>% reshape2::melt(id.vars=c("Diet", "Metagenomics Sample Number")) %>% 
+  tidyr::separate(variable, into=c("EC", "Taxon"), sep="\\|") 
+
+
+taxa_keep <- plot_df %>% group_by(Taxon) %>% summarize(mean=mean(value)) %>% arrange(desc(mean)) %>% pull(Taxon) %>% head(n=10)
+
+plot_df$taxa_labs <- plot_df$Taxon
+plot_df$taxa_labs[which(!plot_df$taxa_labs %in% taxa_keep)] <- "Other"
+
+cols <- Polychrome::palette36.colors(n=11)
+cols <- unname(cols)
+
+
+library(ggplot2)
+plot_df %>% ggplot(aes(x=`Metagenomics Sample Number`, y=value, fill=taxa_labs)) + geom_col() +
+  facet_wrap(~ Diet, scales = "free_x") + scale_fill_manual(values=cols) +
+  ylab("Tryptophanase transcript CPM") +
+  xlab("") +
+  theme(axis.text.x = element_blank()) +
+  labs(fill="Contributing Taxon") +
+  theme_bw()
+
+
+ggsave("Revisions/Display_Items/From_bile_acid_invest/Tryptophanase_strat_mtx.png", height=8, width=12)
+ggsave("Revisions/Display_Items/From_bile_acid_invest/Tryptophanase_strat_mtx.pdf", height=8, width=12)
+
+
+
+
+metadata_ec_mtx %>% ggplot(aes(x=Diet, y=`1.4.3.2`, fill=Diet)) +
+  geom_boxplot() + 
+  geom_pwc() +
+  scale_fill_manual(values=col_diets) +
+  theme_bw() +
+  ylab("L-amino acid oxidase transcript CPM")
+
+
+ggsave("Revisions/Display_Items/From_bile_acid_invest/amino_acid_oxidase_mtx.png", height=5, width=3.5)
+ggsave("Revisions/Display_Items/From_bile_acid_invest/amino_acid_oxidase_mtx.pdf", height=5, width=3.5)
+
+
+metadata_ec_mtx %>% ggplot(aes(x=Diet, y=`4.1.1.74`, fill=Diet)) +
+  geom_boxplot() + 
+  geom_pwc() +
+  scale_fill_manual(values=col_diets) +
+  theme_bw() +
+  ylab("indolepyruvate decarboxylase transcript CPM")
+
+
+ggsave("Revisions/Display_Items/From_bile_acid_invest/indolepy_dec_mtx.png", height=5, width=3.5)
+ggsave("Revisions/Display_Items/From_bile_acid_invest/indolepy_dec_mtx.pdf", height=5, width=3.5)
+
+
+
+##remake mgx data
+
+mgx_ec_data$`Metagenomics Sample Number` <- rownames(mgx_ec_data)
+
+metadata_mgx_ec <- metadata %>% left_join(mgx_ec_data)
+
+metadata_mgx_ec %>% ggplot(aes(x=Diet, y=`1.4.3.2`, fill=Diet)) +
+  geom_boxplot() + 
+  geom_pwc() +
+  scale_fill_manual(values=col_diets) +
+  theme_bw() +
+  ylab("L-amino acid oxidase CPM")
+
+
+ggsave("Revisions/Display_Items/From_bile_acid_invest/amino_acid_oxidase_mgx.png", height=5, width=3.5)
+ggsave("Revisions/Display_Items/From_bile_acid_invest/amino_acid_oxidase_mgx.pdf", height=5, width=3.5)
+
+
+
+metadata_mgx_ec %>% ggplot(aes(x=Diet, y=`4.1.1.74`, fill=Diet)) +
+  geom_boxplot() + 
+  geom_pwc() +
+  scale_fill_manual(values=col_diets) +
+  theme_bw() +
+  ylab("indolepyruvate decarboxylase CPM")
+
+
+ggsave("Revisions/Display_Items/From_bile_acid_invest/indolepy_dec_mgx.png", height=5, width=3.5)
+ggsave("Revisions/Display_Items/From_bile_acid_invest/indolepy_dec_mgx.pdf", height=5, width=3.5)
+```

@@ -1,0 +1,1991 @@
+---
+title: "Figure2 - loCHO project"
+author: "Jacob T. Nearing PhD & Kelsey N. Thompson PhD"
+date: "2025-02-26"
+output: html_document
+---
+
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir = here::here())
+
+
+#source helper functions
+source(here::here("Utility_Scripts/helper_functions.R"))
+source(here::here("Utility_Scripts/load_data_functions.R"))
+
+library(ggplot2)
+library(vegan)
+library(grid)
+library(tidyverse)
+library(dplyr)
+library(scales)
+library(tibble)
+library(viridis)
+library(reshape2)
+library(data.table)
+library(cowplot)
+library(ggridges)
+library(gridExtra)
+```
+
+Load data
+```{r}
+
+bug <- load_taxa_data()
+bug_common <- bug[,is_common(t(bug))]
+  
+metadata <- load_meta_data(m4_data = bug)
+rownames(metadata) <- metadata$`Metagenomics Sample Number`
+
+metadata$diet <- metadata$`Diet Name`
+```
+
+
+```{r}
+# Diet Coloring -----------------------------------------------------------
+#col_diets = c("High Carb" = "red3", "High Fat" = "darkslateblue", "High Protein" = "steelblue")
+col_diets = c("High Carb" = "#FF6700", "High Fat"="#56B4E9", "High Protein"="#009E73")
+# Bar colors for reference
+col = scale_fill_manual(values = c("#3288BD", "#5E4FA2", "#66A61E", "#FFED6F", "#FF0000", "#F46D43", "#E7298A", "#00008B", "#8DD3C7", "#FFFFB3", "#BEBADA", "#FB8072", "#80B1D3", "#B3DE69", "#FCCDE5", "#BC80BD", "#CCEBC5", "#9E0142", "#D53E4F", "#FDAE61", "#FEE08B", "#333333", "#66C2A5", "#3288BD", "#1B9E77", "#D95F02", "#7570B3", "#E6AB02", "#A6761D"))
+```
+
+Measure of amount of unknowns by food
+```{r unknown_analysis, echo= FALSE, warning = FALSE, message = FALSE, dpi=300, cache=TRUE, fig.height= 4, fig.width=7}
+uk = data.frame(bug$UNKNOWN)
+names(uk) = "unknown"
+row.names(uk) = row.names(bug)
+
+uk$dog = metadata$`Animal Name`
+uk$time = metadata$`Time Point` 
+uk$diet = metadata$`Diet Name`
+uk$order = metadata$`Diet Order Names`
+
+
+ggplot(uk, aes(y = unknown, x = diet, color = diet)) + geom_boxplot(lwd =2, outlier.shape = NA) + theme_classic(base_size = 16) + scale_color_manual(values = col_diets) + geom_dotplot(binaxis='y', stackdir='center', position=position_dodge(0.75), binwidth = 1) + facet_grid(~order, space = "free", scales = "free") + geom_line(aes(group = dog), color = "grey", alpha = 0.5) + ylab("Percent unknown") + xlab("Current Diet") + theme(legend.position = "NONE")
+
+ggsave("Revisions/Display_Items/From_Figure2_script/Unknown_taxa_amount.pdf", 
+       height=6, width=18)
+
+ggsave("Revisions/Display_Items/From_Figure2_script/Unknown_taxa_amount.png", 
+       height=6, width=18)
+```
+
+# Stacked barcharts of composition
+
+```{r barplot_individuals, echo= FALSE, warning = FALSE, message = FALSE, fig.height=8, fig.width=25, dpi=600, cache=TRUE}
+species = data.frame(t(bug), check.names = F)
+species_common = species[is_common(species), ]
+species_common = data.frame(t(species_common), check.names = F)
+
+who = names(sort(colMeans(species_common), decreasing = TRUE))[1:20]
+f = species_common[,names(species_common) %in% who]
+#Sort f by most abundant taxa
+f = f[order(colMeans(f), decreasing = T)]
+# adding in other taxa as a column for display
+f$Other = 100-rowSums(f)
+who = c(who, "Other")
+# now order samples (rows) by the most abundant taxon/Sort the x-axis by most abundant
+#f = f[order(f[1], decreasing = T ), ]
+#transpose f to add in the sample names for the melt
+f = data.frame(t(f), check.names = F)
+#head(f)
+#remove the X in front of the numbers in the colnames
+names(f) = gsub("^X", "", names(f))
+#head(f)
+# add Taxon column prior to melting
+f$Taxa <- row.names(f)
+# melt
+m = reshape2::melt(f)
+#make the colors for 29 taxa + 1 "Other" (30 total), making the "Other" gray.
+m$dog = metadata[ match(m$variable, row.names(metadata)), "Animal Name" ]
+m$diet = metadata[ match(m$variable, row.names(metadata)), "Diet Name"]
+m$order = metadata[ match(m$variable, row.names(metadata)), "Diet Order Names"]
+m$time = metadata[ match(m$variable, row.names(metadata)), "Time Point"]
+
+
+col = scale_fill_manual(values = c("#3288BD", "#5E4FA2", "#66A61E", "#FFED6F", "#FF0000", "#F46D43", "#E7298A", "#00008B", "#8DD3C7", "#FFFFB3", "#BEBADA", "#FB8072", "#80B1D3", "#B3DE69", "#FCCDE5", "#BC80BD", "#CCEBC5", "#9E0142", "#D53E4F", "#FDAE61", "#CCCCCC"))
+m = subset(m, value > 0)
+
+p = ggplot(m, aes(time, fill = Taxa)) + 
+  geom_bar(aes(weight = value), position = position_fill(reverse = TRUE), color = "black") + 
+  theme_classic(base_size = 12) + col + xlab("Sample")+
+  ylab("Relative Abundance") +
+  theme(legend.text = element_text(face = "italic", size = 8)) +
+  guides(fill = guide_legend(ncol = 1, reverse=TRUE, keyheight = 0.55)) + scale_y_continuous(labels = percent_format()) + labs(title="") + theme(plot.title = element_text(size = 8)) + theme(axis.text.x = element_blank()) + theme(axis.ticks.x = element_blank()) + facet_wrap(~order + dog, scales = "free", ncol = 18) 
+p$data$Taxa = factor(p$data$Taxa, ordered = TRUE, levels = who)
+plot(p)
+
+ggsave("Revisions/Display_Items/From_Figure2_script/Stacked_by_dogs.pdf", 
+       height=6, width=24)
+```
+
+```{r}
+p = ggplot(m, aes(dog, fill = Taxa)) + 
+  geom_bar(aes(weight = value), position = position_fill(reverse = TRUE), color = "black") + 
+  theme_classic(base_size = 12) + 
+  col +
+  xlab("Sample") + 
+  ylab("Relative Abundance") +
+  theme(legend.text = element_text(face = "italic", size = 8)) + 
+  guides(fill = guide_legend(ncol = 1, reverse=TRUE, keyheight = 0.55)) +
+  scale_y_continuous(labels = percent_format()) + labs(title="") +
+  theme(plot.title = element_text(size = 8)) +
+  theme(axis.text.x = element_blank()) +
+  theme(axis.ticks.x = element_blank()) + facet_grid(~diet + order, scales = "free", space = "free") 
+
+p$data$Taxa = factor(p$data$Taxa, ordered = TRUE, levels = who)
+plot(p)
+
+ggsave("Revisions/Display_Items/From_Figure2_script/stacked_by_diet.pdf",
+       height=8, width=16)
+
+ggsave("Revisions/Display_Items/From_Figure2_script/stacked_by_diet.png",
+       height=8, width=16)
+```
+
+
+# Maaslin3 taxon models
+```{r}
+phylum = load_taxa_data(level="Phylum", keep_unknown = F)
+class = load_taxa_data(level="Class", keep_unknown = F)
+order = load_taxa_data(level="Order", keep_unknown = F)
+family = load_taxa_data(level="Family", keep_unknown = F)
+genus = load_taxa_data(level="Genus", keep_unknown = F)
+species_s = load_taxa_data(level="Species", keep_unknown = F)
+```
+
+## SGBs
+```{r}
+library(maaslin3)
+
+set.seed(1234)
+metadata$diet = factor(metadata$diet, levels = c("High Carb", "High Protein", "High Fat"))
+metadata$age <- metadata$`age (yr)`
+metadata$animal <- metadata$`Animal Name`
+metadata$order <- as.character(metadata$`Diet Order Group Number`)
+#SGB
+# fit_out <- maaslin3(input_data = species_common,
+#                     input_metadata = metadata,
+#                     output = 'diet_sgb_MaAsLin3',
+#                     formula = '~ age + Gender + diet + (1|animal)',
+#                     normalization = 'TSS',
+#                     transform = 'LOG',
+#                     augment = TRUE,
+#                     standardize = TRUE,
+#                     max_significance = 0.05,
+#                     median_comparison_abundance = TRUE,
+#                     median_comparison_prevalence = FALSE,
+#                     max_pngs = 250,
+#                     cores = 1)
+
+
+# fit_out <- maaslin3(input_data = species_common,
+#                     input_metadata = metadata,
+#                     output = 'dietorder_sgb_MaAsLin3_rev',
+#                     formula = '~ age + Gender + diet*order + (1|animal)',
+#                     normalization = 'TSS',
+#                     transform = 'LOG',
+#                     augment = TRUE,
+#                     standardize = TRUE,
+#                     max_significance = 0.05,
+#                     median_comparison_abundance = TRUE,
+#                     median_comparison_prevalence = FALSE,
+#                     max_pngs = 250,
+#                     small_random_effects = T,
+#                     cores = 1)
+
+# 
+# fit_out <- maaslin3(input_data = species_common,
+#                     input_metadata = metadata,
+#                     output = 'dietorder_sgb_MaAsLin3_rev_plog',
+#                     formula = '~ age + Gender + diet*order + (1|animal)',
+#                     normalization = 'TSS',
+#                     transform = 'PLOG',
+#                     evaluate_only = "abundance",
+#                     augment = TRUE,
+#                     standardize = TRUE,
+#                     max_significance = 0.05,
+#                     median_comparison_abundance = TRUE,
+#                     max_pngs = 250,
+#                     cores = 1,,
+#                     zero_threshold = -1,
+#                     warn_prevalence = F)
+# 
+# metadata$diet_sim = ifelse(metadata$diet == "High Carb", "High Carb", "Keto")
+
+# fit_out <- maaslin3(input_data = species_common, 
+#                     input_metadata = metadata, 
+#                     output = 'diet_simplified_sgb_MaAsLin3', 
+#                     formula = '~ age + Gender + diet_sim + (1|animal)', 
+#                     normalization = 'TSS', 
+#                     transform = 'LOG', 
+#                     augment = TRUE, 
+#                     standardize = TRUE, 
+#                     max_significance = 0.05, 
+#                     median_comparison_abundance = TRUE, 
+#                     median_comparison_prevalence = FALSE, 
+#                     max_pngs = 250, 
+#                     cores = 1)
+```
+
+## Species
+```{r}
+# fit_out <- maaslin3(input_data = species_s, 
+#                     input_metadata = metadata, 
+#                     output = 'diet_species_MaAsLin3', 
+#                     formula = '~ age + Gender + diet + (1|animal)', 
+#                     normalization = 'TSS', 
+#                     transform = 'LOG', 
+#                     augment = TRUE, 
+#                     standardize = TRUE, 
+#                     max_significance = 0.05, 
+#                     median_comparison_abundance = TRUE, 
+#                     median_comparison_prevalence = FALSE, 
+#                     max_pngs = 250, 
+#                     cores = 1)
+
+
+# fit_out <- maaslin3(input_data = species_s, 
+#                     input_metadata = metadata, 
+#                     output = 'dietorder_species_MaAsLin3', 
+#                     formula = '~ age + Gender + diet*order + (1|animal)', 
+#                     normalization = 'TSS', 
+#                     transform = 'LOG', 
+#                     augment = TRUE, 
+#                     standardize = TRUE, 
+#                     max_significance = 0.05, 
+#                     median_comparison_abundance = TRUE, 
+#                     median_comparison_prevalence = FALSE, 
+#                     max_pngs = 250, 
+#                     cores = 1)
+
+# fit_out <- maaslin3(input_data = species_s, 
+#                     input_metadata = metadata, 
+#                     output = 'diet_simplified_species_MaAsLin3', 
+#                     formula = '~ age + Gender + diet_sim + (1|animal)', 
+#                     normalization = 'TSS', 
+#                     transform = 'LOG', 
+#                     augment = TRUE, 
+#                     standardize = TRUE, 
+#                     max_significance = 0.05, 
+#                     median_comparison_abundance = TRUE, 
+#                     median_comparison_prevalence = FALSE, 
+#                     max_pngs = 250, 
+#                     cores = 1)
+```
+
+## Genus
+```{r}
+
+# fit_out <- maaslin3(input_data = genus, 
+#                     input_metadata = metadata, 
+#                     output = 'diet_genus_MaAsLin3', 
+#                     formula = '~ age + Gender + diet + (1|animal)', 
+#                     normalization = 'TSS', 
+#                     transform = 'LOG', 
+#                     augment = TRUE, 
+#                     standardize = TRUE, 
+#                     max_significance = 0.05, 
+#                     median_comparison_abundance = TRUE, 
+#                     median_comparison_prevalence = FALSE, 
+#                     max_pngs = 250, 
+#                     cores = 1)
+
+
+# fit_out <- maaslin3(input_data = genus, 
+#                     input_metadata = metadata, 
+#                     output = 'dietorder_genus_MaAsLin3', 
+#                     formula = '~ age + Gender + diet*order + (1|animal)', 
+#                     normalization = 'TSS', 
+#                     transform = 'LOG', 
+#                     augment = TRUE, 
+#                     standardize = TRUE,
+#                     max_significance = 0.05, 
+#                     median_comparison_abundance = TRUE, 
+#                     median_comparison_prevalence = FALSE, 
+#                     max_pngs = 250, 
+#                     cores = 1)
+
+# fit_out <- maaslin3(input_data = genus, 
+#                     input_metadata = metadata, 
+#                     output = 'diet_simplified_genus_MaAsLin3', 
+#                     formula = '~ age + Gender + diet_sim + (1|animal)', 
+#                     normalization = 'TSS', 
+#                     transform = 'LOG', 
+#                     augment = TRUE, 
+#                     standardize = TRUE, 
+#                     max_significance = 0.05, 
+#                     median_comparison_abundance = TRUE, 
+#                     median_comparison_prevalence = FALSE, 
+#                     max_pngs = 250, 
+#                     cores = 1)
+```
+
+## Family
+```{r}
+# fit_out <- maaslin3(input_data = family, 
+#                     input_metadata = metadata, 
+#                     output = 'diet_family_MaAsLin3', 
+#                     formula = '~ age + Gender + diet + (1|animal)', 
+#                     normalization = 'TSS', 
+#                     transform = 'LOG', 
+#                     augment = TRUE, 
+#                     standardize = TRUE, 
+#                     max_significance = 0.05, 
+#                     median_comparison_abundance = TRUE, 
+#                     median_comparison_prevalence = FALSE, 
+#                     max_pngs = 250, 
+#                     cores = 1)
+
+
+# fit_out <- maaslin3(input_data = family, 
+#                     input_metadata = metadata, 
+#                     output = 'dietorder_family_MaAsLin3', 
+#                     formula = '~ age + Gender + diet*order + (1|animal)', 
+#                     normalization = 'TSS', 
+#                     transform = 'LOG', 
+#                     augment = TRUE, 
+#                     standardize = TRUE, 
+#                     max_significance = 0.05, 
+#                     median_comparison_abundance = TRUE, 
+#                     median_comparison_prevalence = FALSE, 
+#                     max_pngs = 250, 
+#                     cores = 1)
+
+# fit_out <- maaslin3(input_data = family, 
+#                     input_metadata = metadata, 
+#                     output = 'diet_simplified_family_MaAsLin3', 
+#                     formula = '~ age + Gender + diet_sim + (1|animal)', 
+#                     normalization = 'TSS', 
+#                     transform = 'LOG', 
+#                     augment = TRUE, 
+#                     standardize = TRUE, 
+#                     max_significance = 0.05,
+#                     median_comparison_abundance = TRUE, 
+#                     median_comparison_prevalence = FALSE, 
+#                     max_pngs = 250, 
+#                     cores = 1)
+```
+
+## Order
+```{r}
+# fit_out <- maaslin3(input_data = order, 
+#                     input_metadata = metadata, 
+#                     output = 'diet_order_MaAsLin3',
+#                     formula = '~ age + Gender + diet + (1|animal)', 
+#                     normalization = 'TSS',
+#                     transform = 'LOG', 
+#                     augment = TRUE, 
+#                     standardize = TRUE, 
+#                     max_significance = 0.05, 
+#                     median_comparison_abundance = TRUE, 
+#                     median_comparison_prevalence = FALSE, 
+#                     max_pngs = 250, 
+#                     cores = 1)
+
+
+# fit_out <- maaslin3(input_data = order, 
+#                     input_metadata = metadata, 
+#                     output = 'dietorder_order_MaAsLin3', 
+#                     formula = '~ age + Gender + diet*order + (1|animal)', 
+#                     normalization = 'TSS', 
+#                     transform = 'LOG', 
+#                     augment = TRUE, 
+#                     standardize = TRUE, 
+#                     max_significance = 0.05, 
+#                     median_comparison_abundance = TRUE, 
+#                     median_comparison_prevalence = FALSE, 
+#                     max_pngs = 250, 
+#                     cores = 1)
+
+# fit_out <- maaslin3(input_data = order, 
+#                     input_metadata = metadata, 
+#                     output = 'diet_simplified_order_MaAsLin3', 
+#                     formula = '~ age + Gender + diet_sim + (1|animal)', 
+#                     normalization = 'TSS', 
+#                     transform = 'LOG', 
+#                     augment = TRUE, 
+#                     standardize = TRUE, 
+#                     max_significance = 0.05, 
+#                     median_comparison_abundance = TRUE, 
+#                     median_comparison_prevalence = FALSE, 
+#                     max_pngs = 250, 
+#                     cores = 1)
+```
+
+## Class
+```{r}
+# fit_out <- maaslin3(input_data = class, 
+#                     input_metadata = metadata, 
+#                     output = 'diet_class_MaAsLin3', 
+#                     formula = '~ age + Gender + diet + (1|animal)', 
+#                     normalization = 'TSS', 
+#                     transform = 'LOG', 
+#                     augment = TRUE, 
+#                     standardize = TRUE, 
+#                     max_significance = 0.05, 
+#                     median_comparison_abundance = TRUE, 
+#                     median_comparison_prevalence = FALSE, 
+#                     max_pngs = 250, 
+#                     cores = 1)
+
+
+# fit_out <- maaslin3(input_data = class, 
+#                     input_metadata = metadata, 
+#                     output = 'dietorder_class_MaAsLin3', 
+#                     formula = '~ age + Gender + diet*order + (1|animal)', 
+#                     normalization = 'TSS', 
+#                     transform = 'LOG', 
+#                     augment = TRUE, 
+#                     standardize = TRUE, 
+#                     max_significance = 0.05, 
+#                     median_comparison_abundance = TRUE, 
+#                     median_comparison_prevalence = FALSE, 
+#                     max_pngs = 250, 
+#                     cores = 1)
+
+# fit_out <- maaslin3(input_data = class, 
+#                     input_metadata = metadata, 
+#                     output = 'diet_simplified_class_MaAsLin3', 
+#                     formula = '~ age + Gender + diet_sim + (1|animal)', 
+#                     normalization = 'TSS', 
+#                     transform = 'LOG', 
+#                     augment = TRUE, 
+#                     standardize = TRUE, 
+#                     max_significance = 0.05, 
+#                     median_comparison_abundance = TRUE, 
+#                     median_comparison_prevalence = FALSE, 
+#                     max_pngs = 250, 
+#                     cores = 1)
+```
+
+## Phylum
+```{r}
+# fit_out <- maaslin3(input_data = phylum, 
+#                     input_metadata = metadata, 
+#                     output = 'diet_phylum_MaAsLin3', 
+#                     formula = '~ age + Gender + diet + (1|animal)', 
+#                     normalization = 'TSS', 
+#                     transform = 'LOG', 
+#                     augment = TRUE, 
+#                     standardize = TRUE, 
+#                     max_significance = 0.05, 
+#                     median_comparison_abundance = TRUE, 
+#                     median_comparison_prevalence = FALSE, 
+#                     max_pngs = 250, 
+#                     cores = 1)
+
+
+# fit_out <- maaslin3(input_data = phylum, 
+#                     input_metadata = metadata, 
+#                     output = 'dietorder_phylum_MaAsLin3', 
+#                     formula = '~ age + Gender + diet*order + (1|animal)', 
+#                     normalization = 'TSS', 
+#                     transform = 'LOG', 
+#                     augment = TRUE, 
+#                     standardize = TRUE, 
+#                     max_significance = 0.05, 
+#                     median_comparison_abundance = TRUE, 
+#                     median_comparison_prevalence = FALSE, 
+#                     max_pngs = 250, 
+#                     cores = 1)
+
+# fit_out <- maaslin3(input_data = phylum, 
+#                     input_metadata = metadata, 
+#                     output = 'diet_simplified_phylum_MaAsLin3', 
+#                     formula = '~ age + Gender + diet_sim + (1|animal)', 
+#                     normalization = 'TSS', 
+#                     transform = 'LOG', 
+#                     augment = TRUE, 
+#                     standardize = TRUE, 
+#                     max_significance = 0.05, 
+#                     median_comparison_abundance = TRUE, 
+#                     median_comparison_prevalence = FALSE, 
+#                     max_pngs = 250, 
+#                     cores = 1)
+```
+
+
+# Examination of Maaslin3 results
+
+
+## Checking how many general assocations between each
+Check how many associated with general LC intake
+
+We don't use this simplified model in the paper as checking the overlaps between the specific models is more precise to
+identify which taxon are relateed to general HC vs. LC
+```{r}
+# SGB_simple_diet <- read.table("diet_simplified_sgb_MaAsLin3/all_results_simplified.tsv", check.names = F, header=T)
+# 
+# #filter to diet value, only take models with 0.1
+# abundance_SGB <- SGB_simple_diet %>% filter(metadata=="diet_sim") %>% filter(qval_individual < 0.1) %>% filter(model=="abundance") %>% pull(feature) %>% unique()
+# 
+# abundance_SGB
+# 
+# 
+# prev_SGB <- SGB_simple_diet %>% filter(metadata=="diet_sim") %>% filter(qval_individual < 0.1) %>% filter(model=="prevalence") %>% pull(feature) %>% unique()
+# 
+# 
+# unique(c(prev_SGB, abundance_SGB))
+# 
+# setdiff(prev_SGB, abundance_SGB)
+# setdiff(abundance_SGB, prev_SGB)
+```
+
+
+Check diet specific assocaitions
+```{r}
+##read in SGB diet
+SGB_diet <- read.table("diet_sgb_MaAsLin3/all_results.tsv", check.names = F, header=T)
+
+# grab abundance protein significant
+protein_specific_abund <- SGB_diet %>% filter(metadata=="diet") %>% filter(value=="High Protein") %>% filter(qval_individual < 0.1) %>% filter(model=="abundance") %>% pull(feature) %>% unique()
+
+#grab prev. protein significant
+protein_specific_prev <- SGB_diet %>% filter(metadata=="diet") %>% filter(value=="High Protein") %>% filter(qval_individual < 0.1) %>% filter(model=="prevalence") %>% pull(feature) %>% unique()
+
+#grab fat abundance significant
+fat_specific_abund <- SGB_diet %>% filter(metadata=="diet") %>% filter(value=="High Fat") %>% filter(qval_individual < 0.1) %>% filter(model=="abundance") %>% pull(feature) %>% unique()
+
+#grab fat prev. significant
+fat_specific_prev <- SGB_diet %>% filter(metadata=="diet") %>% filter(value=="High Fat") %>% filter(qval_individual < 0.1) %>% filter(model=="prevalence") %>% pull(feature) %>% unique()
+```
+
+
+```{r}
+intersect(protein_specific_abund, fat_specific_abund)
+intersect(protein_specific_prev, fat_specific_prev)
+
+#get those specific to fat
+fat_abund_sig <- setdiff(fat_specific_abund, protein_specific_abund)
+fat_prev_sig <- setdiff(fat_specific_prev, protein_specific_prev)
+
+### check the taxonomy of these, to see if there is enrichment of a specific genera
+all_tax_fat <- union(fat_abund_sig, fat_prev_sig)
+SGB_fat <- gsub(".*_", "", all_tax_fat)
+SGB_fat
+
+bug4 <- read.csv(file = "Data/Taxonomic_profiles/metaphlan_4_0_6_Oct22_fixed_profiles.tsv", sep = '\t', header = T, check.names = F)
+
+bug4 <- bug4 %>% filter(grepl("t__",`# taxonomy`))
+bug4$`# taxonomy`
+
+fat_full_taxonomy <- sapply(SGB_fat, FUN=function(x) grep(x, bug4$`# taxonomy`))
+split_list <- strsplit(bug4$`# taxonomy`[fat_full_taxonomy], "\\|")
+df_fat_taxonomy <- as.data.frame(do.call(rbind, split_list), stringsAsFactors = F)
+
+table(df_fat_taxonomy$V5)
+#### 5 from lachno and 5 from clostridiaceae
+
+
+prot_abund_sig <- setdiff(protein_specific_abund, fat_specific_abund)
+prot_prev_sig <- setdiff(protein_specific_prev, fat_specific_prev)
+
+all_tax_prot <- union(prot_abund_sig, prot_prev_sig)
+##remove unknown
+all_tax_prot <- all_tax_prot[-16]
+## 30 again need to dfigure out what things increased most...
+SGB_prot <- gsub(".*_", "", all_tax_prot)
+SGB_prot[27] <- "SGB14985"
+
+prot_full_taxonomy <- sapply(SGB_prot, FUN=function(x) grep(x, bug4$`# taxonomy`))
+split_list <- strsplit(bug4$`# taxonomy`[prot_full_taxonomy], "\\|")
+df_prot_taxonomy <- as.data.frame(do.call(rbind, split_list), stringsAsFactors = F)
+
+table(df_prot_taxonomy$V5) 
+table(df_fat_taxonomy$V5)
+
+keep_fat <- gsub("t__", "", df_fat_taxonomy$V8)
+keep_fat_pat <- paste(keep_fat, collapse = "|")
+
+keep_prot <- gsub("t__", "", df_prot_taxonomy$V8)
+keep_prot_pat <- paste(keep_prot, collapse = "|")
+
+fat_specifc_res <- SGB_diet %>% filter(metadata=="diet") %>% filter(grepl(keep_fat_pat, feature))
+
+protein_specifc_res <- SGB_diet %>% filter(metadata=="diet") %>% filter(grepl(keep_prot_pat, feature))
+```
+
+
+## density subpanels
+
+```{r}
+
+#uses global variables which isn't great but should be fine for this...
+make_density_plot <- function(SGB){
+  taxon <- colnames(species_common)[grep(SGB, colnames(species_common))][1]
+  
+  cpho = data.frame(row.names(species_common), species_common[,taxon])
+  names(cpho) = c("Samples", "rel_abun")
+  cpho$diet = metadata[match(cpho$Samples, row.names(metadata)), "Diet Name"]
+  cpho$diet = factor(cpho$diet, levels = c("High Carb", "High Fat", "High Protein"))
+
+  #get number that are zero
+  zero_cpho = subset(cpho, rel_abun == 0)
+
+  #get number that are non-zero
+  nonzero_cpho = subset(cpho, rel_abun != 0)
+
+  #get non_zero in high carb and get median
+  tmp = subset(nonzero_cpho, diet == "High Carb")
+  median_value = median(tmp$rel_abun)
+
+  #normalize by median and take log
+  nonzero_cpho$rel_abun = log10(nonzero_cpho$rel_abun/median_value)
+
+
+  table1 = data.frame(table(cpho$diet))
+  #number of zero in each
+  table2 = data.frame(table(zero_cpho$diet))
+  zero_cpho_final = merge(table1, table2, by = "Var1")
+  names(zero_cpho_final) = c("diet", "total", "zeros")
+  zero_cpho_final$porportion = zero_cpho_final$zeros / zero_cpho_final$total *100
+
+  zeroplots_cpho_diet = ggplot(zero_cpho_final, aes(x = diet, y = porportion, fill = diet)) + 
+    geom_bar(position = position_dodge(0.1), stat = "identity") + 
+    theme_classic(base_size = 14)+ scale_fill_manual(values = col_diets) + 
+    ylab("Zeros (%)")  + theme(axis.text.x = element_blank(), axis.title.x = element_blank())  + 
+    theme(legend.position = "NONE")  + ylim(0, 100)
+
+
+  #png("cpho_denisty_diet.png", height = 3, width = 7, units = "in", res = 600)
+  density_cpho_diet = ggplot(nonzero_cpho, aes(x = rel_abun, y= diet, fill = diet)) + 
+    geom_density_ridges(alpha = 0.8, scale = 15, stroke = 2) + 
+    scale_fill_manual(values = col_diets) + xlim(-3, 3) + theme_classic(base_size = 14)+ 
+    labs(fill = "Diet", title = taxon) + ylab("Density") + 
+    xlab("log10(abundance relative to Prefeed)") + 
+    theme(plot.title = element_text(face = "italic")) + 
+    theme(axis.text.y = element_blank(), axis.ticks.y = element_blank(), 
+          plot.title = element_text(size = 14), axis.title.x = element_text(size =12)) 
+  #dev.off()
+  plot <- grid.arrange(zeroplots_cpho_diet, density_cpho_diet, ncol = 2, nrow = 1, widths = c(1.5, 4.5))
+  
+  return(plot)
+}
+
+```
+
+### HC assocations
+```{r}
+
+keep_taxa <- union(intersect(protein_specific_abund, fat_specific_abund), intersect(protein_specific_prev, fat_specific_prev))
+
+in_both <- SGB_diet %>% filter(metadata=="diet") %>% filter(feature %in% keep_taxa)
+
+keep_SGBs <- str_extract(keep_taxa, "SGB\\d+")
+keep_SGBs <- keep_SGBs[-9]
+```
+
+```{r}
+density_plots_HC <- list()
+
+for(i in unique(keep_SGBs)){
+  density_plots_HC[[i]] <- make_density_plot(i)
+}
+
+dir.create("Revisions/Display_Items/From_Figure2_script/HC_density_plots")
+for(i in 1:length(density_plots_HC)){
+  filename <- paste0("Revisions/Display_Items/From_Figure2_script/HC_density_plots/", keep_SGBs[i], "_density.pdf")
+  ggsave(filename, plot=density_plots_HC[[i]], width=10.5, height=3)
+}
+```
+
+### LCF specific
+
+```{r}
+density_plots_LCF <- list()
+
+for(i in unique(SGB_fat)){
+  density_plots_LCF[[i]] <- make_density_plot(i)
+}
+
+dir.create("Revisions/Display_Items/From_Figure2_script/LCF_density_plots")
+for(i in 1:length(density_plots_LCF)){
+  filename <- paste0("Revisions/Display_Items/From_Figure2_script/LCF_density_plots/", SGB_fat[i], "_density.pdf")
+  ggsave(filename, plot=density_plots_LCF[[i]], width=10.5, height=3)
+}
+```
+
+
+### LCP species
+
+```{r}
+density_plots_LCP <- list()
+
+for(i in unique(SGB_prot)){
+  density_plots_LCP[[i]] <- make_density_plot(i)
+}
+
+dir.create("Revisions/Display_Items/From_Figure2_script/LCP_density_plots")
+for(i in 1:length(density_plots_LCP)){
+  filename <- paste0("Revisions/Display_Items/From_Figure2_script/LCP_density_plots/", SGB_prot[i], "_density.pdf")
+  ggsave(filename, plot=density_plots_LCP[[i]], width=10.5, height=3)
+}
+
+```
+
+
+# Order interaction analysis
+
+```{r}
+SGB_diet_order <- read.table("dietorder_sgb_MaAsLin3_rev_plog/all_results.tsv", check.names = F, header=T)
+
+sig_interactions <- SGB_diet_order %>% filter(grepl(":", name)) %>% filter(qval_individual < 0.1)
+
+keep_microbes <- sig_interactions %>% pull(feature) %>% unique()
+
+plot_data <- SGB_diet_order %>% filter(grepl(":", name)) %>% filter(feature %in% keep_microbes)
+
+library(ggplot2)
+plot_data %>% ggplot(aes(x=coef, y=feature, color=model, alpha=qval_individual < 0.1)) + 
+  geom_point(size=3) +
+  theme_bw() +
+  ylab("Microbe") +
+  xlab("diet:order coefficient") +
+  facet_grid(~ value) +
+  scale_color_manual(values=c("#8B008B", "#008B8B"))
+
+ggsave("Revisions/Display_Items/From_Figure2_script/Taxon_order_effects_supplemental.pdf",
+       height=6, width=12)
+
+```
+
+
+```{r}
+plots <- map(keep_microbes, function(id) {
+  metadata_bug %>% 
+    ggplot(aes(x = `Time Point`, y = .data[[id]], fill = diet, group = `Animal Name`)) + 
+    geom_point(shape = 21, size = 3) +
+    facet_grid(cols = vars(`Diet Order Names`)) +
+    theme_classic(base_size = 12) +
+    geom_line() +
+    scale_fill_manual(values = col_diets) +
+    labs(y = id)
+})
+names(plots) <- keep_microbes
+
+iwalk(plots, function(plot, id) {
+  ggsave(
+    filename = paste0("Revisions/Display_Items/From_Figure2_script/", id, ".pdf"),  # change folder/extension as needed
+    plot = plot,
+    width = 8,
+    height = 3.5
+  )
+})
+
+```
+
+
+SGB39153
+```{r}
+metadata_bug %>% ggplot(aes(x=`Time Point`, y=Turicibacter_sp_TS3_SGB39153, fill=diet, group = `Animal Name`)) + 
+  geom_point(shape=21, size=3) +
+  facet_grid(cols=vars(`Diet Order Names`)) +
+  theme_classic(base_size = 12) +
+  geom_line() +
+  scale_fill_manual(values=col_diets)
+
+
+ggsave("Revisions/Display_Items/From_Figure2_script//SGB105989_order.pdf",
+       width=8, height=3.5)
+```
+
+SGB14778
+```{r}
+metadata_bug %>% ggplot(aes(x=`Time Point`, y=Slackia_SGB14778_SGB14778, fill=diet, group = `Animal Name`)) + 
+  geom_point(shape=21, size=3) +
+  facet_grid(cols=vars(`Diet Order Names`)) +
+  theme_classic(base_size = 12) +
+  geom_line() +
+  scale_fill_manual(values=col_diets)
+
+
+ggsave("Revisions/Display_Items/From_Figure2_script//SGB105989_order.pdf",
+       width=8, height=3.5)
+```
+
+
+SGB105989
+```{r}
+metadata_bug %>% ggplot(aes(x=`Time Point`, y=Firmicutes_SGB105989, fill=diet, group = `Animal Name`)) + 
+  geom_point(shape=21, size=3) +
+  facet_grid(cols=vars(`Diet Order Names`)) +
+  theme_classic(base_size = 12) +
+  geom_line() +
+  scale_fill_manual(values=col_diets)
+
+
+ggsave("Revisions/Display_Items/From_Figure2_script//SGB105989_order.pdf",
+       width=8, height=3.5)
+```
+
+SGB4794
+```{r}
+metadata_bug %>% ggplot(aes(x=`Time Point`, y=Blautia_hansenii_SGB4794, fill=diet, group = `Animal Name`)) + 
+  geom_point(shape=21, size=3) +
+  facet_grid(cols=vars(`Diet Order Names`)) +
+  theme_classic(base_size = 12) +
+  geom_path() +
+  scale_fill_manual(values=col_diets)
+
+
+ggsave("Revisions/Display_Items/From_Figure2_script/SGB4794_order.pdf",
+       width=8, height=3.5)
+```
+
+SGB42251
+```{r}
+metadata_bug %>% ggplot(aes(x=`Time Point`, y=Erysipelotrichaceae_SGB42251, fill=diet, group = `Animal Name`)) + 
+  geom_point(shape=21, size=3) +
+  facet_grid(cols=vars(`Diet Order Names`)) +
+  theme_classic(base_size = 12) +
+  geom_path() +
+  scale_fill_manual(values=col_diets)
+
+
+ggsave("Revisions/Display_Items/From_Figure2_script/SGB42251_order.pdf",
+       width=8, height=3.5)
+
+
+metadata$`Time Point` <- factor(metadata$`Time Point`, levels = c("Prefeed", "T1", "T2"))
+
+metadata_bug %>% ggplot(aes(x=`Time Point`, y=Erysipelotrichaceae_SGB42251, fill=diet, group = `Animal Name`)) + 
+  geom_point(shape=21, size=3) +
+  facet_grid(cols=vars(`Diet Order Names`)) +
+  theme_classic(base_size = 12) +
+  geom_line() +
+  scale_fill_manual(values=col_diets)
+
+ggsave("Revisions/Display_Items/From_Figure2_script/SGB42251_order.pdf",
+       width=8, height=3.5)
+
+```
+
+SGB14737
+```{r}
+metadata_bug %>% ggplot(aes(x=`Time Point`, y=Collinsella_tanakaei_SGB14737, fill=diet, group = `Animal Name`)) + 
+  geom_point(shape=21, size=3) +
+  facet_grid(cols=vars(`Diet Order Names`)) +
+  theme_classic(base_size = 12) +
+  geom_path() +
+  scale_fill_manual(values=col_diets)
+
+
+ggsave("Revisions/Display_Items/From_Figure2_script/SGB14737_order.pdf",
+       width=8, height=3.5)
+```
+
+
+SGB6783
+```{r}
+metadata_bug %>% ggplot(aes(x=`Time Point`, y=Candidatus_Catenibacterium_tridentinum_SGB6783, fill=diet, group = `Animal Name`)) + 
+  geom_point(shape=21, size=3) +
+  facet_grid(cols=vars(`Diet Order Names`)) +
+  theme_classic(base_size = 12) +
+  geom_line() +
+  scale_fill_manual(values=col_diets)
+
+
+ggsave("Revisions/Display_Items/From_Figure2_script/SGB6783_order.pdf",
+       width=8, height=3.5)
+```
+
+SGB105119
+```{r}
+metadata_bug %>% ggplot(aes(x=`Time Point`, y=Atopobiaceae_unclassified_SGB105119_SGB105119, fill=diet, group = `Animal Name`)) + 
+  geom_point(shape=21, size=3) +
+  facet_grid(cols=vars(`Diet Order Names`)) +
+  theme_classic(base_size = 12) +
+  geom_path() +
+  scale_fill_manual(values=col_diets)
+
+
+ggsave("Revisions/Display_Items/From_Figure2_script/SGB105119_order.pdf",
+       width=8, height=3.5)
+```
+
+SGB65708
+```{r}
+metadata_bug %>% ggplot(aes(x=`Time Point`, y=Prevotellaceae_SGB65708, fill=diet, group = `Animal Name`)) + 
+  geom_point(shape=21, size=3) +
+  facet_grid(cols=vars(`Diet Order Names`)) +
+  theme_classic(base_size = 12) +
+  geom_path() +
+  scale_fill_manual(values=col_diets)
+
+
+ggsave("Revisions/Display_Items/From_Figure2_script/SGB65708_order.pdf",
+       width=8, height=3.5)
+
+```
+
+SGB6132
+```{r}
+metadata_bug %>% ggplot(aes(x=`Time Point`, y=Peptacetobacter_SGB6132_SGB6132, fill=diet, group = `Animal Name`)) + 
+  geom_point(shape=21, size=3) +
+  facet_grid(cols=vars(`Diet Order Names`)) +
+  theme_classic(base_size = 12) +
+  geom_line() +
+  scale_fill_manual(values=col_diets)
+```
+
+SGB106454
+```{r}
+metadata_bug %>% ggplot(aes(x=`Time Point`, y=Peptostreptococcaceae_SGB106454, fill=diet, group = `Animal Name`)) + 
+  geom_point(shape=21, size=3) +
+  facet_grid(cols=vars(`Diet Order Names`)) +
+  theme_classic(base_size = 12) +
+  geom_line() +
+  scale_fill_manual(values=col_diets)
+```
+
+SGB106207
+```{r}
+metadata_bug %>% ggplot(aes(x=`Time Point`, y=Eubacteriaceae_SGB106207, fill=diet, group = `Animal Name`)) + 
+  geom_point(shape=21, size=3) +
+  facet_grid(cols=vars(`Diet Order Names`)) +
+  theme_classic(base_size = 12) +
+  geom_line() +
+  scale_fill_manual(values=col_diets)
+```
+
+SGB6148
+```{r}
+metadata_bug %>% ggplot(aes(x=`Time Point`, y=Romboutsia_timonensis_SGB6148, fill=diet, group = `Animal Name`)) + 
+  geom_point(shape=21, size=3) +
+  facet_grid(cols=vars(`Diet Order Names`)) +
+  theme_classic(base_size = 12) +
+  geom_line() +
+  scale_fill_manual(values=col_diets)
+```
+
+SGB6177
+```{r}
+metadata_bug %>% ggplot(aes(x=`Time Point`, y=Clostridium_SGB6177_SGB6177, fill=diet, group = `Animal Name`)) + 
+  geom_point(shape=21, size=3) +
+  facet_grid(cols=vars(`Diet Order Names`)) +
+  theme_classic(base_size = 12) +
+  geom_line() +
+  scale_fill_manual(values=col_diets)
+```
+
+SGB4859
+```{r}
+metadata_bug %>% ggplot(aes(x=`Time Point`, y=Lachnospiraceae_SGB4859, fill=diet, group = `Animal Name`)) + 
+  geom_point(shape=21, size=3) +
+  facet_grid(cols=vars(`Diet Order Names`)) +
+  theme_classic(base_size = 12) +
+  geom_line() +
+  scale_fill_manual(values=col_diets)
+```
+
+SGB14792
+```{r}
+metadata_bug %>% ggplot(aes(x=`Time Point`, y=Eggerthellaceae_SGB14792, fill=diet, group = `Animal Name`)) + 
+  geom_point(shape=21, size=3) +
+  facet_grid(cols=vars(`Diet Order Names`)) +
+  theme_classic(base_size = 12) +
+  geom_line() +
+  scale_fill_manual(values=col_diets)
+```
+
+SGB72905
+```{r}
+metadata_bug %>% ggplot(aes(x=`Time Point`, y=Firmicutes_SGB72905, fill=diet, group = `Animal Name`)) + 
+  geom_point(shape=21, size=3) +
+  facet_grid(cols=vars(`Diet Order Names`)) +
+  theme_classic(base_size = 12) +
+  geom_line() +
+  scale_fill_manual(values=col_diets)
+
+```
+
+# MaAsLin3 EC interaction
+```{r}
+
+mtx_ec_data <- load_EC_MTX_data(metadata, strat=F)
+mtx_ec_data_prepross <- mtx_ec_data
+colnames(mtx_ec_data_prepross) <- gsub(":.*", "", colnames(mtx_ec_data_prepross))
+mgx_ec_data <- load_EC_data(metadata, strat=F)
+
+##okay these are load
+
+preprocess_out <- preprocess_dna_mtx(mgx_ec_data, mtx_ec_data_prepross)
+identical(colnames(preprocess_out$dna_table), colnames(preprocess_out$rna_table))
+
+###filter out things that are 0 in 20% of samples
+keep_cols <- which(colSums(preprocess_out$rna_table > 0) >= 21)
+length(keep_cols)
+
+preprocess_out$dna_table <- preprocess_out$dna_table[,keep_cols]
+preprocess_out$rna_table <- preprocess_out$rna_table[,keep_cols]
+# 
+fit_out <- maaslin3(input_data = preprocess_out$rna_table,
+                    input_metadata = metadata,
+                    output = 'dietorder_ec_mtx_plog_filt',
+                    formula = '~ age + Gender + diet*order + (1|animal)',
+                    normalization = 'TSS',
+                    transform = 'pLOG',
+                    feature_specific_covariate = preprocess_out$dna_table,
+                    feature_specific_covariate_name = "DNA",
+                    feature_specific_covariate_record = FALSE,
+                    augment = TRUE,
+                    standardize = TRUE,
+                    max_significance = 0.05,
+                    median_comparison_abundance = TRUE,
+                    median_comparison_prevalence = FALSE,
+                    max_pngs = 250,
+                    cores = 1,
+                    small_random_effects = F,
+                    zero_threshold = -1,
+                    evaluate_only = "abundance",
+                    warn_prevalence = F)
+
+
+##read in maaslin3 results
+ec_mtx_res_order <- read.table("dietorder_ec_mtx_plog_filt//all_results.tsv", sep="\t", header=T)
+
+interaction_res <- ec_mtx_res_order %>% filter(grepl(":", name)) %>% filter(is.na(error))
+
+interaction_res %>% ggplot(aes(x=coef, y=-log10(pval_individual), color=name, alpha=qval_individual < 0.1)) +
+  geom_point() +
+  #xlim(-5, 5) +
+  theme_bw(base_size=12) +
+  scale_color_manual(values=c("#E69F00","#0072B2"))
+
+ggsave("Revisions/Display_Items/From_Figure2_script/ec_mtx_volcano_order.pdf",
+       height=4, width=6)
+```
+
+## exploration of hits high fat
+
+```{r}
+sig_interaction_ec <- interaction_res %>% filter(qval_individual < 0.1)
+sig_ECs <- sig_interaction_ec %>% pull(feature)
+```
+
+```{r}
+length_hits <- c()
+for(i in sig_ECs){
+  res <- grep(paste0(i, ":"), colnames(mtx_ec_data_strat))
+  length_hits[[i]] <- length(res)
+}
+length(which(length_hits==1))
+
+
+```
+
+### 4.1.1.83
+```{r}
+
+
+
+identical(rownames(preprocess_out$rna_table), metadata$`Metagenomics Sample Number`)
+mtx_ec_data$diet <- metadata$`Diet Name`
+mtx_ec_data$order <- metadata$`Diet Order Names`
+mtx_ec_data$time <- metadata$`Time Point`
+
+p1 <- mtx_ec_data %>% ggplot(aes(x=time, y=`4.1.1.83: 4-hydroxyphenylacetate decarboxylase`, fill=diet)) +
+  geom_boxplot() +
+  facet_grid(~order) +
+  scale_fill_manual(values=col_diets) +
+  geom_jitter()
+p1
+
+ggsave("Revisions/Display_Items/From_Figure2_script/ec_mtx_4.1.1.83.pdf",
+       height=4, width=6)
+
+##okay no hit there
+p2 <- mtx_ec_data_strat %>% ggplot(aes(x=time, y=`4.1.1.83: 4-hydroxyphenylacetate decarboxylase|s__Ruminococcus_gnavus.t__SGB4584`, fill=Diet)) +
+  geom_boxplot() +
+  facet_grid(~order) +
+  scale_fill_manual(values=col_diets)
+
+
+plots[[9]] + p2
+```
+
+### 4.2.1.172
+```{r}
+p1 <- mtx_ec_data %>% ggplot(aes(x=time, y=`4.2.1.172: NO_NAME`, fill=diet)) +
+  geom_boxplot() +
+  facet_grid(~order) +
+  scale_fill_manual(values=col_diets) +
+  geom_jitter() +
+  ylab("RNA: 4.2.1.172: trans-4-hydroxy-L-proline dehydratase CPM")
+
+p1
+###cant find who this belongs too...
+```
+
+### 5.3.3.17
+mostly zero data not super trustworthy data
+```{r}
+p1 <- mtx_ec_data %>% ggplot(aes(x=time, y=`5.3.3.17: Trans-2,3-dihydro-3-hydroxyanthranilate isomerase`, fill=diet)) +
+  geom_boxplot() +
+  facet_grid(~order) +
+  scale_fill_manual(values=col_diets) +
+  geom_jitter()
+
+p1
+```
+
+###3.6.1.61
+```{r}
+p1 <- mtx_ec_data %>% ggplot(aes(x=time, y=`3.6.1.61: Diadenosine hexaphosphate hydrolase (ATP-forming)`, fill=diet)) +
+  geom_boxplot() +
+  facet_grid(~order) +
+  scale_fill_manual(values=col_diets) +
+  geom_jitter()
+
+p1
+
+mtx_ec_data_strat %>% ggplot(aes(x=time, y=`3.6.1.61: Diadenosine hexaphosphate hydrolase (ATP-forming)|unclassified`, fill=Diet)) +
+  geom_boxplot() +
+  facet_grid(~order) +
+  scale_fill_manual(values=col_diets) +
+  geom_jitter()
+
+##almost all from unclassified. so we don't know.
+```
+
+###3.5.1.n3
+```{r}
+mtx_ec_data %>% ggplot(aes(x=time, y=`3.5.1.n3: 4-deoxy-4-formamido-L-arabinose-phosphoundecaprenol deformylase`, fill=diet)) +
+  geom_boxplot() +
+  facet_grid(~order) +
+  scale_fill_manual(values=col_diets) +
+  geom_jitter()
+```
+
+
+### 2.1.1.282
+
+```{r}
+mtx_ec_data %>% ggplot(aes(x=time, y=`2.1.1.282: methyltransferase`, fill=diet)) +
+  geom_boxplot() +
+  facet_grid(~order) +
+  scale_fill_manual(values=col_diets) +
+  geom_jitter()
+
+
+ggsave("Revisions/Display_Items/From_Figure2_script/EC_2.1.1.282_mtx.pdf",
+       height=4, width=6)
+```
+
+###2.8.1.2
+```{r}
+mtx_ec_data %>% ggplot(aes(x=time, y=`2.8.1.2: 3-mercaptopyruvate sulfurtransferase`, fill=diet)) +
+  geom_boxplot() +
+  facet_grid(~order) +
+  scale_fill_manual(values=col_diets) +
+  geom_jitter()
+
+```
+
+## exploration high protein
+
+### 1.6.3.4
+```{r}
+p1 <- mtx_ec_data %>% ggplot(aes(x=time, y=`1.6.3.4: NADH oxidase (H(2)O-forming)`, fill=diet)) +
+  geom_boxplot() +
+  facet_grid(~order) +
+  scale_fill_manual(values=col_diets) +
+  geom_jitter()
+
+p1
+
+ggsave()
+```
+
+### 1.8.1.9
+
+```{r}
+p1 <- mtx_ec_data %>% ggplot(aes(x=time, y=`1.8.1.9: Thioredoxin-disulfide reductase`, fill=diet)) +
+  geom_boxplot() +
+  facet_grid(~order) +
+  scale_fill_manual(values=col_diets) +
+  geom_jitter()
+
+p1
+
+
+p2 <- mtx_ec_data_strat %>% ggplot(aes(x=time,y=`1.8.1.9: Thioredoxin-disulfide reductase|s__GGB48667_SGB72905.t__SGB72905`, fill=Diet)) +
+  geom_boxplot() +
+  facet_grid(~order) +
+  scale_fill_manual(values=col_diets) +
+  geom_jitter()
+p2
+```
+
+###5.3.1.33
+```{r}
+p1 <- mtx_ec_data %>% ggplot(aes(x=time, y=`5.3.1.33: NO_NAME`, fill=diet)) +
+  geom_boxplot() +
+  facet_grid(~order) +
+  scale_fill_manual(values=col_diets) +
+  geom_jitter()
+
+p1
+```
+
+###2.3.3.9
+```{r}
+p1 <- mtx_ec_data %>% ggplot(aes(x=time, y=`2.3.3.9: Malate synthase`, fill=diet)) +
+  geom_boxplot() +
+  facet_grid(~order) +
+  scale_fill_manual(values=col_diets) +
+  geom_jitter()
+
+p1
+```
+
+
+###1.2.1.58
+```{r}
+p1 <- mtx_ec_data %>% ggplot(aes(x=time, y=`1.2.1.58: Phenylglyoxylate dehydrogenase (acylating)`, fill=diet)) +
+  geom_boxplot() +
+  facet_grid(~order) +
+  scale_fill_manual(values=col_diets) +
+  geom_jitter()
+
+p1
+
+#mtx_ec_data_strat$`1.2.1.58: Phenylglyoxylate dehydrogenase (acylating)|unclassified`
+```
+
+###1.2.1.58
+```{r}
+p1 <- mtx_ec_data %>% ggplot(aes(x=time, y=`4.3.1.17: L-serine ammonia-lyase`, fill=diet)) +
+  geom_boxplot() +
+  facet_grid(~order) +
+  scale_fill_manual(values=col_diets) +
+  geom_jitter()
+
+p1
+
+ggsave("Revisions/Display_Items/From_Figure2_script/ec_mtx_1.2.1.58.pdf",
+       height=4, width=6)
+```
+
+# Function analysis for order
+
+## ECs MTX
+```{r}
+mtx_ec_data_strat <- load_EC_MTX_data(metadata, strat=T)
+
+bugs <- unique(sub(".*\\|", "", colnames(mtx_ec_data_strat)))
+###calculate presence and enough coverage to id
+# Build presence/absence matrix: 1 if bug has ANY non-zero value in that sample
+result <- sapply(bugs, function(bug) {
+  
+  # Find all columns belonging to this bug
+  bug_cols <- grep(paste0("\\|", bug, "$"), colnames(mtx_ec_data_strat))
+  
+  # Check if ANY function|bug column is non-zero for each sample
+  as.integer(rowSums(mtx_ec_data_strat[, bug_cols, drop = FALSE] != 0) > 0)
+  
+})
+rownames(result) <- rownames(mtx_ec_data_strat)
+
+
+func_freq <- sapply(colnames(mtx_ec_data_strat), function(col) {
+  
+  # Extract bug name from this column
+  bug <- sub(".*\\|", "", col)
+  
+  # Get samples where this bug is present
+  bug_present_samples <- rownames(result)[result[, bug] == 1]
+  
+  # Among those samples, how often is this specific function|bug non-zero?
+  n_present        <- length(bug_present_samples)
+  n_func_nonzero   <- sum(mtx_ec_data_strat[bug_present_samples, col] != 0)
+  
+  proportion <- n_func_nonzero / n_present
+  
+  return(proportion)
+})
+
+func_freq_df <- data.frame(
+  func_bug   = names(func_freq),
+  bug        = sub(".*\\|", "", names(func_freq)),
+  func       = sub("\\|.*", "", names(func_freq)),
+  proportion = round(func_freq, 3)
+)
+
+###okay now what do we do we can plot out a heatmap where we have bug x func and we highlight the SGBs we "care" about?
+
+func_freq_wide <- func_freq_df %>%
+  select(bug, func, proportion) %>%
+  pivot_wider(names_from = func, values_from = proportion)
+
+
+##okay lets do a heatmap now
+##SGBS I care about
+heat_mat <- func_freq_wide %>%
+  column_to_rownames("bug") %>%
+  as.matrix()
+
+##name rows by SGB #
+rownames(heat_mat) <- gsub(".*t__", "", rownames(heat_mat))
+heat_mat[is.na(heat_mat)] <- 0
+##function to reorder matrix
+reorder_matrix <- function(mat, keep, margin = 1) {
+  # margin = 1 for rows, 2 for columns
+  names_vec <- if (margin == 1) rownames(mat) else colnames(mat)
+  
+  new_order <- c(keep[keep %in% names_vec],           # keep order respected
+                 names_vec[!names_vec %in% keep])      # rest in original order
+  
+  if (margin == 1) mat[new_order, ] else mat[, new_order]
+}
+```
+
+### EC analysis
+
+```{r}
+LCF_O2 <- sig_interactions %>% filter(value=="High Fat:order2") %>% filter(coef < 0)
+LCF_O2_SGBs <- gsub(".*SGB", "SGB", LCF_O2$feature)
+
+LCF_O1 <- sig_interactions %>% filter(value=="High Fat:order2") %>% filter(coef > 0)
+LCF_O1_SGBs <- gsub(".*SGB", "SGB", LCF_O1$feature)
+
+LCP_O2 <- sig_interactions %>% filter(value=="High Protein:order2") %>% filter(coef < 0)
+LCP_O2_SGBs <- gsub(".*SGB", "SGB", LCP_O2$feature)
+
+
+LCP_O1 <- sig_interactions %>% filter(value=="High Protein:order2") %>% filter(coef > 0)
+LCP_O1_SGBs <- gsub(".*SGB", "SGB", LCP_O1$feature)
+
+all_sig_SGBs <- c(LCF_O2_SGBs,LCF_O1_SGBs,LCP_O2_SGBs,LCP_O1_SGBs)
+
+###filter so that we only keep functions found in these microbes
+keep_cols <- colSums(heat_mat[rownames(heat_mat) %in% all_sig_SGBs, ] > 0) > 0
+
+heat_mat_filt_cols <- heat_mat[,keep_cols]
+
+##reorder
+heat_mat_filt_cols_reorder <- reorder_matrix(heat_mat_filt_cols, all_sig_SGBs, 1)
+
+which(rownames(heat_mat_filt_cols_reorder)=="unclassified")
+heat_mat_filt_cols_reorder_filtunc <- heat_mat_filt_cols_reorder[-79,]
+
+row_annotation <- data.frame(
+  Group = case_match(rownames(heat_mat_filt_cols_reorder_filtunc),
+                     LCF_O2_SGBs ~ "LCF_order1",
+                     LCF_O1_SGBs ~ "LCF_order2",
+                     LCP_O2_SGBs ~ "LCP_order2",
+                     LCP_O1_SGBs ~ "LCP_order1",
+                     .default="no assocation"),
+  row.names = rownames(heat_mat_filt_cols_reorder_filtunc)
+)
+
+ann_colors <- list(
+  Group = c(
+    "LCF_order1" = "#E41A1C",
+    "LCF_order2" = "#377EB8",
+    "LCP_order2" = "#4DAF4A",
+    "LCP_order1" = "orange",
+    "no assocation" = "grey70"
+  )
+)
+library(pheatmap)
+pheatmap(
+  heat_mat_filt_cols_reorder_filtunc,
+  annotation_row  = row_annotation,
+  annotation_colors = ann_colors,
+  cluster_rows    = F,
+  cluster_cols    = T,
+  color           = colorRampPalette(c("white", "steelblue"))(50),
+  border_color    = NA,
+  fontsize        = 10,
+  main            = "Function Presence Rate per Bug",
+  labels_row = "",
+  labels_col = "",
+  show_colnames = FALSE
+)
+```
+
+### Examining of specifics.
+
+```{r}
+background_average_matrix <- heat_mat_filt_cols_reorder_filtunc[!rownames(heat_mat_filt_cols_reorder_filtunc) %in% all_sig_SGBs,]
+
+background_average <- colMeans(background_average_matrix)
+
+LCF_O2_SGBs_matrix <- heat_mat_filt_cols_reorder_filtunc[LCF_O2_SGBs,]
+average_LCF_02 <- colMeans(LCF_O2_SGBs_matrix)
+
+average_LCF_02_diff <- average_LCF_02 - background_average
+top_hits <- names(sort(average_LCF_02_diff, decreasing = T))
+
+pheatmap(
+  heat_mat_filt_cols_reorder_filtunc[,top_hits[1:10]],
+  annotation_row  = row_annotation,
+  annotation_colors = ann_colors,
+  cluster_rows    = F,
+  cluster_cols    = F,
+  color           = colorRampPalette(c("white", "steelblue"))(50),
+  border_color    = NA,
+  fontsize        = 10,
+  main            = "Function Presence Rate per Bug",
+  labels_row = "",
+  labels_col = "",
+  show_colnames = FALSE
+)
+
+top_hits[1:10]
+
+
+LCF_O1_SGBs_matrix <- heat_mat_filt_cols_reorder_filtunc[LCF_O1_SGBs,]
+average_LCF_01 <- colMeans(LCF_O1_SGBs_matrix)
+
+average_LCF_01_diff <- average_LCF_01 - background_average
+top_hits_LCF_01 <- names(sort(average_LCF_01_diff, decreasing = T))
+top_hits_LCF_01[1:10]
+
+pheatmap(
+  heat_mat_filt_cols_reorder_filtunc[,top_hits_LCF_01[1:10]],
+  annotation_row  = row_annotation,
+  annotation_colors = ann_colors,
+  cluster_rows    = F,
+  cluster_cols    = F,
+  color           = colorRampPalette(c("white", "steelblue"))(50),
+  border_color    = NA,
+  fontsize        = 10,
+  main            = "Function Presence Rate per Bug",
+  labels_row = "",
+  labels_col = "",
+  show_colnames = FALSE
+)
+###all three encode Diaminopropionate ammonia-lyase
+### we could then look at the MTX of this??
+### lets look at the others though.
+
+LCP_O2_SGBs_matrix <- heat_mat_filt_cols_reorder_filtunc[LCP_O2_SGBs,]
+average_LCP_02 <- colMeans(LCP_O2_SGBs_matrix)
+
+average_LCP_02_diff <- average_LCP_02 - background_average
+top_hits_LCP_O2 <- names(sort(average_LCP_02_diff, decreasing = T))
+top_hits_LCP_O2[1:10]
+
+##this is started on Fat went to protein and grew really well. lots of peptide things nothing super interesting.
+
+pheatmap(
+  heat_mat_filt_cols_reorder_filtunc[,top_hits_LCP_O2[1:10]],
+  annotation_row  = row_annotation,
+  annotation_colors = ann_colors,
+  cluster_rows    = F,
+  cluster_cols    = F,
+  color           = colorRampPalette(c("white", "steelblue"))(50),
+  border_color    = NA,
+  fontsize        = 10,
+  main            = "Function Presence Rate per Bug",
+  labels_row = "",
+  labels_col = "",
+  show_colnames = FALSE
+)
+
+LCP_O1_SGBs_matrix <- heat_mat_filt_cols_reorder_filtunc[LCP_O1_SGBs[-3],]
+average_LCP_01 <- colMeans(LCP_O1_SGBs_matrix)
+
+average_LCP_01_diff <- average_LCP_01 - background_average
+top_hits_LCP_O1 <- names(sort(average_LCP_01_diff, decreasing = T))
+top_hits_LCP_O1[1:10]
+
+## grew well in protein and continued to grow well when in high fat...
+```
+
+
+###LCF_O1
+
+```{r}
+#4.3.1.15
+mtx_ec_data_strat$`Metagenomics Sample Number` <- rownames(mtx_ec_data_strat)
+identical(mtx_ec_data_strat$`Metagenomics Sample Number`, metadata$`Metagenomics Sample Number`)
+mtx_ec_data_strat$Diet <- metadata$`Diet Name`
+mtx_ec_data_strat$order <- metadata$`Diet Order Names`
+
+keep_cols <- colnames(mtx_ec_data_strat)[grep("4.3.1.15", colnames(mtx_ec_data_strat))]
+
+plot_df <- mtx_ec_data_strat %>% select(c("Diet", "Metagenomics Sample Number", "order", keep_cols)) %>% reshape2::melt(id.vars=c("Diet", "Metagenomics Sample Number", "order")) %>% 
+  tidyr::separate(variable, into=c("EC", "Taxon"), sep="\\|") 
+
+taxa_keep <- plot_df %>% group_by(Taxon) %>% summarize(mean=mean(value)) %>% arrange(desc(mean)) %>% pull(Taxon) %>% head(n=10)
+
+plot_df$taxa_labs <- plot_df$Taxon
+plot_df$taxa_labs[which(!plot_df$taxa_labs %in% taxa_keep)] <- "Other"
+
+cols <- Polychrome::palette36.colors(n=11)
+cols <- unname(cols)
+
+
+plot_df %>% ggplot(aes(x=`Metagenomics Sample Number`, y=value, fill=taxa_labs)) + geom_col() +
+  facet_grid(~ order + Diet, scales = "free") + scale_fill_manual(values=cols) +
+  ylab("4.3.1.15 CPM") +
+  xlab("") +
+  theme(axis.text.x = element_blank()) +
+  labs(fill="Contributing Taxon") +
+  theme_bw()
+
+###
+mtx_ec_data_strat %>% ggplot(aes(x=Diet, y=`4.3.1.15: Diaminopropionate ammonia-lyase|s__Ruminococcus_gnavus.t__SGB4584`)) + geom_boxplot() +
+  facet_grid(~ order)
+
+#3.1.3.3
+
+```
+
+### LCF 02
+
+```{r}
+
+top_hits[1:10]
+```
+
+### 1.11.1.1 NADH peroxidase
+```{r}
+#NADH peroxidase 1.11.1.1
+keep_cols <- colnames(mtx_ec_data_strat)[grep("1.11.1.1:", colnames(mtx_ec_data_strat))]
+
+plot_df <- mtx_ec_data_strat %>% select(c("Diet", "Metagenomics Sample Number", "order", keep_cols)) %>% reshape2::melt(id.vars=c("Diet", "Metagenomics Sample Number", "order")) %>% 
+  tidyr::separate(variable, into=c("EC", "Taxon"), sep="\\|") 
+
+taxa_keep <- plot_df %>% group_by(Taxon) %>% summarize(mean=mean(value)) %>% arrange(desc(mean)) %>% pull(Taxon) %>% head(n=10)
+
+plot_df$taxa_labs <- plot_df$Taxon
+plot_df$taxa_labs[which(!plot_df$taxa_labs %in% taxa_keep)] <- "Other"
+
+cols <- Polychrome::palette36.colors(n=11)
+cols <- unname(cols)
+
+
+plot_df %>% ggplot(aes(x=`Metagenomics Sample Number`, y=value, fill=taxa_labs)) + geom_col() +
+  facet_grid(~ order + Diet, scales = "free") + scale_fill_manual(values=cols) +
+  ylab("4.3.1.15 CPM") +
+  xlab("") +
+  theme(axis.text.x = element_blank()) +
+  labs(fill="Contributing Taxon") +
+  theme_bw()
+
+
+
+mtx_ec_data$`Metagenomics Sample Number` <- rownames(mtx_ec_data)
+identical(mtx_ec_data$`Metagenomics Sample Number`, metadata$`Metagenomics Sample Number`)
+mtx_ec_data$Diet <- metadata$`Diet Name`
+mtx_ec_data$order <- metadata$`Diet Order Names`
+mtx_ec_data$time <- metadata$`Time Point`
+library(ggpubr)
+
+p1 <- mtx_ec_data %>% ggplot(aes(x=time, y=`1.11.1.1: NADH peroxidase`, fill=Diet)) + geom_boxplot() +
+  facet_grid(~order) + geom_jitter() +
+  geom_pwc() +
+  scale_color_manual(values=col_diets)
+
+
+p2 <- metadata %>% ggplot(aes(x=`Time Point`, y=`Fecal Calprotectin (ng/g)`, fill=`Diet Name`)) + geom_boxplot() +
+  facet_grid(~`Diet Order Names`) +
+  geom_pwc() +
+  scale_fill_manual(values=col_diets) +
+  geom_jitter()
+
+
+p1 + p2
+
+mtx_ec_data_strat %>% ggplot(aes(x=Diet, y=)) + geom_boxplot() +
+  facet_grid(~ order)
+
+
+mtx_ec_data_strat$time <- metadata$`Time Point`
+
+p4 <- mtx_ec_data_strat %>% ggplot(aes(x=Diet, y=`1.11.1.1: NADH peroxidase|s__GGB51102_SGB71318.t__SGB71318`)) + geom_boxplot() +
+  facet_grid(~order)
+
+
+p3 <- mtx_ec_data_strat %>% ggplot(aes(x=time, y=`1.11.1.1: NADH peroxidase|s__GGB78999_SGB105987.t__SGB105987`, fill=Diet)) + geom_boxplot() +
+  facet_grid(~order) +
+  scale_fill_manual(values=col_diets) + geom_jitter()
+
+plots[[2]]
+
+(p1 + p2)/(plots[[2]] + p3)
+plots[[2]] + p3 + p2
+
+p5 <- mtx_ec_data_strat %>% ggplot(aes(x=time, y=`1.11.1.1: NADH peroxidase|s__GGB51102_SGB71318.t__SGB71318`, fill=Diet)) + geom_boxplot() +
+  facet_grid(~order) +
+  scale_fill_manual(values=col_diets)
+
+plots[[1]] + p5
+
+
+p6 <- mtx_ec_data_strat %>% ggplot(aes(x=time, y=`1.11.1.1: NADH peroxidase|s__GGB3550_SGB4746.t__SGB4746`, fill=Diet)) + geom_boxplot() +
+  facet_grid(~order) +
+  scale_fill_manual(values=col_diets)
+
+plots[[3]] + p6
+
+metadata_mtx <- metadata %>% left_join(mtx_ec_data, by="Metagenomics Sample Number")
+
+metadata_mtx %>% ggplot(aes(x=`Fecal Calprotectin (ng/g)`, y=`1.11.1.1: NADH peroxidase`, color=Diet)) + 
+  geom_point(size=3) +
+  facet_grid(~`Diet Order Names`)
+
+##load fecal mbx
+fecal_mbx <- load_fecalMbx_data(metadata)
+
+mtx_ec_data %>% ggplot(aes(x=time, y=`1.11.1.9: Glutathione peroxidase`, fill=Diet)) + geom_boxplot() +
+  facet_grid(~order) + scale_fill_manual(values=col_diets) +
+  geom_jitter()
+
+
+```
+
+### 7.2.1.2
+```{r}
+mtx_ec_data %>% ggplot(aes(x=time, y=`7.2.1.2: NO_NAME`, fill=Diet)) + geom_boxplot() +
+  facet_grid(~order) + scale_fill_manual(values=col_diets)
+
+
+p1_7 <- mtx_ec_data_strat %>% ggplot(aes(x=time, y=`7.2.1.2: NO_NAME|s__GGB51102_SGB71318.t__SGB71318`, 
+                                 fill=Diet)) + geom_boxplot() +
+  facet_grid(~order) +
+  scale_fill_manual(values=col_diets)
+
+p2_7 <- metadata_bug %>% ggplot(aes(x=`Time Point`, y=Eubacteriaceae_SGB71318, fill=`Diet Name`)) + geom_boxplot() +
+  facet_grid(~`Diet Order Names`) +
+  scale_fill_manual(values=col_diets)
+
+plots[[1]] + p1_7
+
+p3_7 <-  mtx_ec_data_strat %>% ggplot(aes(x=time, y=`7.2.1.2: NO_NAME|s__GGB78999_SGB105987.t__SGB105987`, 
+                                 fill=Diet)) + geom_boxplot() +
+  facet_grid(~order) +
+  scale_fill_manual(values=col_diets)
+
+plots[[2]] + p3_7
+
+```
+
+This is old
+
+## MGX Analysis
+
+```{r}
+mgx_ec_data_strat <- load_EC_data(metadata, strat=T, remove_ungroup = T)
+
+bugs <- unique(sub(".*\\|", "", colnames(mgx_ec_data_strat)))
+###calculate presence and enough coverage to id
+# Build presence/absence matrix: 1 if bug has ANY non-zero value in that sample
+result <- sapply(bugs, function(bug) {
+  
+  # Find all columns belonging to this bug
+  bug_cols <- grep(paste0("\\|", bug, "$"), colnames(mgx_ec_data_strat))
+  
+  # Check if ANY function|bug column is non-zero for each sample
+  as.integer(rowSums(mgx_ec_data_strat[, bug_cols, drop = FALSE] != 0) > 0)
+  
+})
+rownames(result) <- rownames(mgx_ec_data_strat)
+
+
+func_freq <- sapply(colnames(mgx_ec_data_strat), function(col) {
+  
+  # Extract bug name from this column
+  bug <- sub(".*\\|", "", col)
+  
+  # Get samples where this bug is present
+  bug_present_samples <- rownames(result)[result[, bug] == 1]
+  
+  # Among those samples, how often is this specific function|bug non-zero?
+  n_present        <- length(bug_present_samples)
+  n_func_nonzero   <- sum(mgx_ec_data_strat[bug_present_samples, col] != 0)
+  
+  proportion <- n_func_nonzero / n_present
+  
+  return(proportion)
+})
+
+func_freq_df <- data.frame(
+  func_bug   = names(func_freq),
+  bug        = sub(".*\\|", "", names(func_freq)),
+  func       = sub("\\|.*", "", names(func_freq)),
+  proportion = round(func_freq, 3)
+)
+
+###okay now what do we do we can plot out a heatmap where we have bug x func and we highlight the SGBs we "care" about?
+
+func_freq_wide <- func_freq_df %>%
+  select(bug, func, proportion) %>%
+  pivot_wider(names_from = func, values_from = proportion)
+
+
+##okay lets do a heatmap now
+##SGBS I care about
+heat_mat <- func_freq_wide %>%
+  column_to_rownames("bug") %>%
+  as.matrix()
+
+##name rows by SGB #
+rownames(heat_mat) <- gsub(".*t__", "", rownames(heat_mat))
+heat_mat[is.na(heat_mat)] <- 0
+##function to reorder matrix
+reorder_matrix <- function(mat, keep, margin = 1) {
+  # margin = 1 for rows, 2 for columns
+  names_vec <- if (margin == 1) rownames(mat) else colnames(mat)
+  
+  new_order <- c(keep[keep %in% names_vec],           # keep order respected
+                 names_vec[!names_vec %in% keep])      # rest in original order
+  
+  if (margin == 1) mat[new_order, ] else mat[, new_order]
+}
+```
+
+
+```{r}
+LCF_O2 <- sig_interactions %>% filter(value=="High Fat:order2") %>% filter(coef < 0)
+LCF_O2_SGBs <- gsub(".*SGB", "SGB", LCF_O2$feature)
+
+LCF_O1 <- sig_interactions %>% filter(value=="High Fat:order2") %>% filter(coef > 0)
+LCF_O1_SGBs <- gsub(".*SGB", "SGB", LCF_O1$feature)
+
+LCP_O2 <- sig_interactions %>% filter(value=="High Protein:order2") %>% filter(coef < 0)
+LCP_O2_SGBs <- gsub(".*SGB", "SGB", LCP_O2$feature)
+
+
+LCP_O1 <- sig_interactions %>% filter(value=="High Protein:order2") %>% filter(coef > 0)
+LCP_O1_SGBs <- gsub(".*SGB", "SGB", LCP_O1$feature)
+
+all_sig_SGBs <- c(LCF_O2_SGBs,LCF_O1_SGBs,LCP_O2_SGBs,LCP_O1_SGBs)
+
+###filter so that we only keep functions found in these microbes
+keep_cols <- colSums(heat_mat[rownames(heat_mat) %in% all_sig_SGBs, ] > 0) > 0
+
+heat_mat_filt_cols <- heat_mat[,keep_cols]
+
+##reorder
+heat_mat_filt_cols_reorder <- reorder_matrix(heat_mat_filt_cols, all_sig_SGBs, 1)
+
+which(rownames(heat_mat_filt_cols_reorder)=="unclassified")
+heat_mat_filt_cols_reorder_filtunc <- heat_mat_filt_cols_reorder[-94,]
+
+row_annotation <- data.frame(
+  Group = case_match(rownames(heat_mat_filt_cols_reorder_filtunc),
+                     LCF_O2_SGBs ~ "LCF_order1",
+                     LCF_O1_SGBs ~ "LCF_order2",
+                     LCP_O2_SGBs ~ "LCP_order2",
+                     LCP_O1_SGBs ~ "LCP_order1",
+                     .default="no assocation"),
+  row.names = rownames(heat_mat_filt_cols_reorder_filtunc)
+)
+
+ann_colors <- list(
+  Group = c(
+    "LCF_order1" = "#E41A1C",
+    "LCF_order2" = "#377EB8",
+    "LCP_order2" = "#4DAF4A",
+    "LCP_order1" = "orange",
+    "no assocation" = "grey70"
+  )
+)
+library(pheatmap)
+pheatmap(
+  heat_mat_filt_cols_reorder_filtunc,
+  annotation_row  = row_annotation,
+  annotation_colors = ann_colors,
+  cluster_rows    = F,
+  cluster_cols    = T,
+  color           = colorRampPalette(c("white", "steelblue"))(50),
+  border_color    = NA,
+  fontsize        = 10,
+  main            = "Function Presence Rate per Bug",
+  labels_row = "",
+  labels_col = "",
+  show_colnames = FALSE
+)
+```
+
+### wilcon rank sum to identify functions that are more likely to be encoded in LCFO1
+```{r}
+int_grp <- which(rownames(heat_mat_filt_cols_reorder_filtunc) %in% LCF_O2_SGBs)
+
+res_p <- c()
+for(j in 1:ncol(heat_mat_filt_cols_reorder_filtunc)){
+  x=heat_mat_filt_cols_reorder_filtunc[int_grp,j]
+  name <- colnames(heat_mat_filt_cols_reorder_filtunc)[j]
+  #filter to only those that are found in all bacteria 50% of the time.
+  if(sum(x>0.5) > length(LCF_O2_SGBs)*.7){
+  res_p[[name]] <- 
+    wilcox.test(x=heat_mat_filt_cols_reorder_filtunc[int_grp,j], 
+                y=heat_mat_filt_cols_reorder_filtunc[-int_grp,j], 
+                alternative = "greater")$p.value
+  }else{
+    
+  }
+}
+
+##apply fdr
+res_q <- p.adjust(res_p, method="fdr")
+
+LCF_02_funcs <- which(res_q < 0.05)
+##identified 43 ECs that were significant based on wilcoxon test
+
+### repeat for LCF_01_SGBs
+
+
+int_grp <- which(rownames(heat_mat_filt_cols_reorder_filtunc) %in% LCF_O1_SGBs)
+
+res_p_LCF_O1 <- c()
+for(j in 1:ncol(heat_mat_filt_cols_reorder_filtunc)){
+  x=heat_mat_filt_cols_reorder_filtunc[int_grp,j]
+  name <- colnames(heat_mat_filt_cols_reorder_filtunc)[j]
+  #filter to only those that are found in all bacteria 50% of the time.
+  if(sum(x>0.5) > length(LCF_O1_SGBs)*.7){
+  res_p_LCF_O1[[name]] <- 
+    wilcox.test(x=heat_mat_filt_cols_reorder_filtunc[int_grp,j], 
+                y=heat_mat_filt_cols_reorder_filtunc[-int_grp,j], 
+                alternative = "greater")$p.value
+  }else{
+    
+  }
+}
+##apply fdr
+res_p_LCF_O1
+##no hits
+
+
+int_grp <- which(rownames(heat_mat_filt_cols_reorder_filtunc) %in% LCP_O1_SGBs)
+
+res_p_LCP_O1 <- c()
+for(j in 1:ncol(heat_mat_filt_cols_reorder_filtunc)){
+  x=heat_mat_filt_cols_reorder_filtunc[int_grp,j]
+  name <- colnames(heat_mat_filt_cols_reorder_filtunc)[j]
+  #filter to only those that are found in all bacteria 50% of the time.
+  if(sum(x>0.5) > length(LCP_O1_SGBs)*.7){
+  res_p_LCP_O1[[name]] <- 
+    wilcox.test(x=heat_mat_filt_cols_reorder_filtunc[int_grp,j], 
+                y=heat_mat_filt_cols_reorder_filtunc[-int_grp,j], 
+                alternative = "greater")$p.value
+  }else{
+    
+  }
+}
+res_p_LCP_O1
+##apply fdr
+res_q_LCP_O1 <- p.adjust(res_p_LCP_O1, method="fdr")
+
+LCP_01_funcs <- which(res_q_LCP_O1 < 0.05)
+###no hits.
+
+int_grp <- which(rownames(heat_mat_filt_cols_reorder_filtunc) %in% LCP_O2_SGBs)
+
+res_p_LCP_O2 <- c()
+for(j in 1:ncol(heat_mat_filt_cols_reorder_filtunc)){
+  x=heat_mat_filt_cols_reorder_filtunc[int_grp,j]
+  name <- colnames(heat_mat_filt_cols_reorder_filtunc)[j]
+  #filter to only those that are found in all bacteria 50% of the time.
+  if(sum(x>0.5) > length(LCP_O2_SGBs)*.7){
+  res_p_LCP_O2[[name]] <- 
+    wilcox.test(x=heat_mat_filt_cols_reorder_filtunc[int_grp,j], 
+                y=heat_mat_filt_cols_reorder_filtunc[-int_grp,j], 
+                alternative = "greater")$p.value
+  }else{
+    
+  }
+}
+res_p_LCP_O2
+##apply fdr
+res_q_LCP_O2 <- p.adjust(res_p_LCP_O2, method="fdr")
+
+LCP_02_funcs <- which(res_q_LCP_O2 < 0.05)
+
+```
+
+```{r}
+heat_mat_filt_cols_reorder_filtunc_sig_filt_LCF01 <- heat_mat_filt_cols_reorder_filtunc[,names(LCF_02_funcs)]
+pheatmap(
+  heat_mat_filt_cols_reorder_filtunc_sig_filt_LCF01,
+  annotation_row  = row_annotation,
+  annotation_colors = ann_colors,
+  cluster_rows    = F,
+  cluster_cols    = T,
+  color           = colorRampPalette(c("white", "steelblue"))(50),
+  border_color    = NA,
+  fontsize        = 10,
+  main            = "Function Presence Rate per Bug",
+  show_colnames = T,
+  show_rownames = F
+)
+
+top_ECs_LCF_01 <- sort(res_q, decreasing = F)[1:10]
+
+#load ec data
+ec_mgx <- load_EC_data(metadata)
+ec_mgx$`Metagenomics Sample Number` <- rownames(ec_mgx)
+
+
+ec_mtx <- load_EC_MTX_data(metadata)
+ec_mtx$`Metagenomics Sample Number` <- rownames(ec_mtx)
+
+
+metadata_ec <- metadata %>% left_join(ec_mgx)
+metadata_ec_mtx <- metadata %>% left_join(ec_mtx)
+
+
+p1 <- metadata_ec_mtx %>% ggplot(aes(x=`Time Point`, y=`1.11.1.1: NADH peroxidase`, fill=diet))+ 
+  geom_boxplot() +
+  facet_grid(~ `Diet Order Names`) +
+  theme_bw(base_size = 12) +
+  scale_fill_manual(values=col_diets)
+
+
+p2 <- metadata_ec_mtx %>% ggplot(aes(x=`Time Point`, y=`7.2.1.2: NO_NAME`, fill=diet))+ 
+  geom_boxplot() +
+  facet_grid(~ `Diet Order Names`) +
+  theme_bw(base_size = 12) +
+  scale_fill_manual(values=col_diets)
+
+p1 + p2
+ggsave("Revisions/Display_Items/From_Figure2_script/expression_perodi.pdf", height=5, width=8)
+```
+# Investigation into SGB105987
+
+
+## phylotree
+```{r}
+library(ggtree)
+library(treeio)
+library(tidytree)
+
+tree <- read.tree("Data/Taxonomic_profiles/mpa_vOct22_CHOCOPhlAnSGB_202212.nwk")
+which(tree$tip.label==105987)
+tree$Nnode
+tree_sub <- tree_subset(tree = tree, node = "105989", levels_back = 4)
+
+ggtree(tree_sub) + geom_tiplab() 
+
+## map labels to SGB names
+name_mapping <- read.table("Data/Taxonomic_profiles/mpa_vOct22_CHOCOPhlAnSGB_202403_species.txt", header=F, sep="\t")
+
+name_mapping$V1 <- gsub("SGB", "", name_mapping$V1)
+name_mapping$Sufix <-  gsub(".*s__", "", name_mapping$V2)
+name_mapping$prefix <- sapply(name_mapping$V2, 
+                            function(x) str_extract(x,
+                                                    "^(.*?)(?=(\\|g__GGB|\\|o__OFGB|\\|c__CFGB|\\|p__PFGB|\\|t__))"))
+
+
+name_mapping$prefix <- gsub('.*[kpcofgst]__', "", name_mapping$prefix)
+name_mapping$prefix[which(is.na(name_mapping$prefix))] <- ""
+name_mapping$SGB_name <- paste(name_mapping$prefix, name_mapping$Sufix, sep="_")
+name_mapping$SGB_name <- gsub("^_", "", name_mapping$SGB_name)
+
+
+tree_sub$tip.label <- name_mapping$SGB_name[match(tree_sub$tip.label, name_mapping$V1)]
+
+ggtree(tree_sub) + geom_tiplab(size =3) 
+
+ggsave("Revisions/Display_Items/From_Figure5_script/SGB105989_phylotree.pdf",
+       height=4, width=6)
+```
